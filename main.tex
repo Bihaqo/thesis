@@ -4,6 +4,53 @@
 \usepackage[russian]{babel}
 \usepackage[utf8]{inputenc}
 
+\usepackage{xcolor}
+
+% use Times
+\usepackage{times}
+% For figures
+\usepackage{graphicx} % more modern
+%\usepackage{epsfig} % less modern
+\usepackage{subfigure}
+% \usepackage{subfig}
+
+\usepackage{hyphenat}
+% For algorithms
+\usepackage{algorithm}
+\usepackage[noend]{algorithmic}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{fixmath}
+\usepackage{mathtools}
+
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\DeclareMathOperator{\rank}{r}
+\DeclareMathOperator{\const}{const}
+\DeclareMathOperator{\sumall}{sum}
+\DeclareMathOperator{\round}{round}
+\DeclareMathOperator{\ttrank}{TT-rank}
+\DeclareMathOperator{\ttround}{TT-round}
+\DeclareMathOperator{\grad}{grad}
+\renewcommand{\vec}[1]{\boldsymbol{#1}}
+\newcommand{\tens}[1]{\boldsymbol{\mathcal{#1}}}
+\newcommand{\tensel}[1]{\mathcal{#1}}
+\newcommand{\alert}[1]{\textbf{#1}}
+
+
+\graphicspath{{figures/}}
+\newcommand{\executeiffilenewer}[3]{%
+  \ifnum\pdfstrcmp{\pdffilemoddate{#1}}%
+  {\pdffilemoddate{#2}} > 0 {\immediate\write18{#3}}\fi}
+\newcommand{\includesvg}[1]{%
+  \executeiffilenewer{#1.svg}{#1.pdf}%
+  {inkscape -z -D --file=#1.svg %
+   --export-pdf=#1.pdf --export-latex}%
+  \input{#1.pdf_tex}%
+}
+
 
 \title{Тензорные методы в машинном обучении}
 
@@ -17,6 +64,102 @@
 \section{Введение}
 \section{Тензорные методы в машинном обучении}
 \section{Разложение в Тензорный Поезд}
+
+\section{TT\hyp{}разложение}
+\label{sec:TT-description}
+
+\begin{figure}[t]
+  % \vskip 0.2in
+  \begin{center}
+	% \resizebox{0.4\textwidth}{!}{
+    \def\svgwidth{7cm}
+    \normalsize
+    \includesvg{figures/TT}
+    % }
+    \caption{Иллюстрация разложения в Тензорный Поезд для тензора $\tens{A}$ размера $3 \times 4 \times 4 \times 3$ все ТТ-ранги которого равны $3$. \label{fig:TT}}
+    \end{center}
+    % \vskip -0.2in
+\end{figure}
+
+Будем говорить, что $n$-мерный тензор~$\mathbf{A}$ представлен в TT\hyp{}формате, если для всех размерностей~$i=1,\ldots,n$ и всех значений индексов по этой размерности~$x_i = 1, \ldots, d_i$ ($d = \max_{i=1,\ldots,n} d_i$) существуют матрицы~$G_i^{\mathbf{A}}[x_i]$, такие, что каждый элемент тензора~$\mathbf{A}$ представим в виде произведения матриц (см Рис.~\ref{fig:TT}):
+\begin{equation}
+\label{TT-format}
+\mathbf{A}(x_1, \dots, x_n) = G_1^{\mathbf{A}}[x_1] G^{\mathbf{A}}_2[x_2] \dotsm G^{\mathbf{A}}_n[x_n].
+\end{equation}
+При этом все матрицы относящиеся к одной и той же размерности $i$ должны иметь одинаковые размеры~$\rank_{i-1}(\mathbf{A}) \times \rank_i(\mathbf{A})$. Чтобы результат матричного произведения~\eqref{TT-format} был равен числу, положим~$\rank_{0}(\mathbf{A}) = \rank_{n}(\mathbf{A}) = 1$. Последовательность~$\left\{\rank_i(\mathbf{A})\right\}_{i=0}^n$ будем называть \emph{TT\hyp{}рангами}~тензора $\mathbf{A}$, а максимальный элемент последовательности~--- \emph{максимальным TT\hyp{}рангом} тензора~$\mathbf{A}$:~$\rank(\mathbf{A}) = \max_{i = 0, \dots, n} \rank_i(\mathbf{A})$.
+Набор матриц~$G^{\mathbf{A}}_i$, соответствующих одному измерению, называется \emph{TT\hyp{}ядром} тензора~$\mathbf{A}$.
+Представление тензора в TT\hyp{}формате будем называть \emph{TT\hyp{}разложением} или \emph{TT\hyp{}представлением}.
+
+Для любого $n$-мерного тензора~$\mathbf{A}$ существует TT\hyp{}представление с максимальным TT\hyp{}рангом $\rank(\mathbf{A}) \leq d^{\frac{n}{2}}$~(см. теорему~2.1 Оселедца \cite{oseledets2011ttMain}). Отметим, что TT\hyp{}представление тензора не единственно.
+
+
+Для обозначения~$(\alpha_{i-1}, \alpha_{i})$-ого элемента матрицы~$G_i^{\mathbf{A}}[x_i]$ будет использоваться символ~$G_i^{\mathbf{A}}[x_i](\alpha_{i-1}, \alpha_{i})$.
+Пользуясь определением произведения матриц, можно переписать формулу~\eqref{TT-format} через элементы TT\hyp{}ядер:
+
+\begin{equation}
+	\label{TT-format-sum}
+	\mathbf{A}(\vec{x}) =
+	\sum_{\alpha_0, \ldots, \alpha_n} G^{\mathbf{A}}_1[x_1](\alpha_0, \alpha_1) \ldots G^{\mathbf{A}}_n[x_n](\alpha_{n-1}, \alpha_n).
+\end{equation}
+
+Для хранения всех элементов тензора~$\mathbf{A}$ требуется~$\prod_{i=1}^n d_i$ ячеек памяти, тогда как хранение~$\mathbf{A}$ в TT\hyp{}формате требует~$\sum_{i=1}^n d_i \rank_{i-1}(\mathbf{A}) \rank_{i}(\mathbf{A})$. Таким образом, TT\hyp{}представление тензора с низкими TT\hyp{}рангами существенно компактнее перечисления его элементов.
+
+Существуют две различные постановки задачи перевода тензора в TT\hyp{}формат: точное TT\hyp{}представление (алгоритм TT-SVD~\cite{oseledets2011ttMain}, применимый для небольших тензоров), и построение приближенного TT\hyp{}представления по небольшому подмножеству элементов тензора. Наилучшим из алгоритмов второго класса в настоящее время является метод AMEn-cross~\cite{dolgov2013amenCross}.
+
+\begin{table}[t]
+\caption{Операции, которые можно эффективно выполнять над тензорами в TT\hyp{}формате. Для каждой операции указана её вычислительная сложность и TT\hyp{}ранг результата для ситуаций, когда результат является тензором в TT\hyp{}формате.}
+\label{TT-tensor-operations}
+\vskip 0.05in
+\begin{center}
+\begin{small}
+\begin{sc}
+\begin{tabular}{l@{\;\;}l@{\;\;}l}
+\hline
+Операция & Ранг результата & Вычислительная сложность \\
+\hline
+% \abovespace
+$\mathbf{C} = \mathbf{A} \cdot \const$      & $\rank(\mathbf{C}) = \rank(\mathbf{A})$             & $O(d  \rank(\mathbf{A}))$\\
+$\mathbf{C} = \mathbf{A} + \const$          & $\rank(\mathbf{C}) = \rank(\mathbf{A})\!+\!1$         & $O(n  d  \rank^2(\mathbf{A}))$\\
+$\mathbf{C} = \mathbf{A} + \mathbf{B}$           & $\rank(\mathbf{C}) \leq \rank(\mathbf{A})\!+\!\rank(\mathbf{B})$       & $O(n  d \, (\rank(\mathbf{A}) + \rank(\mathbf{B}))^2)$\\
+$\mathbf{C} = \mathbf{A} \odot \mathbf{B}$       & $\rank(\mathbf{C}) \leq \rank(\mathbf{A})  \rank(\mathbf{B})$   & $O(n  d  \rank^2(\mathbf{A})  \rank^2(\mathbf{B}))$\\
+$\vec{c}=M\vec{b}$                          & $\rank(\vec{c}) \leq \rank(M) \rank(\vec{b})$       & $O(n d^2 \rank^2(M) \rank^2(\vec{b}))$\\
+%\belowspace
+$\sumall \mathbf{A}$                & --                      & $O(n  d  \rank^2(\mathbf{A}))$\\
+$\left \| \mathbf{A} \right \|_F$       & --                      & $O(n  d  \rank^3(\mathbf{A}))$\\
+% \belowspace
+$\mathbf{C} = \round(\mathbf{A}, \varepsilon)$ & $\rank(\mathbf{C}) \leq \rank(\mathbf{A})$          & $O(n d \rank^3(\mathbf{A}))$\\
+\hline
+\end{tabular}
+\end{sc}
+\end{small}
+\end{center}
+\vskip -0.1in
+\end{table}
+
+Одним из основных достоинств TT\hyp{}формата является возможность эффективно применять различные операции к тензорам в TT\hyp{}формате:
+умножение тензора на константу, добавление константы к тензору, поточечное сложение и умножение тензоров (результат этих операций~--- это тензор в TT\hyp{}формате с возросшими TT\hyp{}рангами); подсчет глобальных характеристик тензора, таких как сумма всех элементов или норма Фробениуса. Обзор операций, которые используются в этой статье, приведен в таблице~\ref{TT-tensor-operations} (детальный обзор проведен Оселедцом~\cite{oseledets2011ttMain}).
+Примение операций к TT\hyp{}тензорам увеличивает TT\hyp{}ранги даже в том случае, когда существует низкоранговое TT\hyp{}представление результата. Чтобы контролировать рост TT\hyp{}рангов существует операция TT\hyp{}округления.
+По TT\hyp{}представлению тензора~$\mathbf{A}$ и относительной точности~$\varepsilon \geq 0$ операция TT\hyp{}округления $\round(\mathbf{A},\varepsilon)$ найдет тензор~$\widehat{\mathbf{A}}$ в TT\hyp{}формате который, во-первых, достаточно близок к тензору~$\mathbf{A}$: $\| \mathbf{A} - \mathbf{\widehat{A}} \|_F \leq \varepsilon  \| \mathbf{A}  \|_F$ и, во-вторых, обладает минимальными TT\hyp{}рангами среди всех тензоров~$\mathbf{B}: \| \mathbf{A} - \mathbf{B} \|_F \leq \frac{\varepsilon}{\sqrt{n - 1}}  \| \mathbf{A}  \|_F$. Наличие операции TT\hyp{}округления позволяет применять последовательность операций к тензорам (например, округляя результат после применения каждой операции), контролируя рост TT\hyp{}рангов.
+
+
+Для повышения эффективности работы с векторами и матрицами специальным образом вводятся понятия TT\hyp{}формата вектора и ТТ\hyp{}формата матрицы.
+Пусть существует отображение между индексами вектора~$\vec{b}\in\mathbb{R}^q$ и $n$-мерными векторами $\vec{y} = (y_1, \dots, y_n)$\footnote{
+Количество элементов в векторе~$\vec{b}$ равно $\prod_{i = 1}^n d_i$.
+}.
+\emph{TT\hyp{}представлением вектора~$\vec{b}$} называется TT\hyp{}представление тензора~$\mathbf{B}(y_1, \dots, y_n)$, содержащего все элементы~$\vec{b}$.
+
+
+Определим понятие TT\hyp{}формата для матриц. Пусть существует отображение между индексами строк и столбцов матрицы~$M$ в $n$-мерные вектора $\vec{x}$ и $\vec{y}$ соответственно. Переупорядочим размерности и представим получившийся тензор в TT\hyp{}формате:
+\begin{equation*}
+\mathbf{M}((x_1, y_1),\ldots,(x_n,y_n))=G_1^{\mathbf{M}}[x_1,y_1]\dots G_n^{\mathbf{M}}[x_n,y_n],
+\end{equation*}
+где $G_i$, $i = 1,\dots,n$ --- это TT\hyp{}ядра, а~$G_i^{\mathbf{M}}[x_i,y_i]$ --- матрицы. \emph{TT\hyp{}представлением матрицы~$M$} будем называть TT\hyp{}представление тензора~$\mathbf{M}$. Отметим, что матрица в TT\hyp{}формате не обязана быть квадратной, т.~к. $x_i$ и $y_i$ могут принимать разное число возможных значений
+
+
+Для матрицы~$M$ и вектора~$\vec{b}$ представленных в TT\hyp{}формате можно эффективно вычислять произведение $\vec{c}=M\vec{b}$ (если соответствующие размерности совпадают). Результатом этой операции является вектор~$\vec{c}$ в TT\hyp{}формате с рангами равными произведению рангов~$M$ и $\vec{b}$: $\rank_i(\vec{c}) = \rank_i(M) \rank_i(\vec{b})$.
+
+Наличие специального определения TT\hyp{}формата для векторов и матриц позволяет применять операции линейной алгебры к задачам большого размера. Например, для поиска минимального элемента тензора можно вытянуть его в диагональную матрицу и применить приближенный метод поиска минимальных собственных значений основанный на алгоритме DMRG~\cite{khoromskij2010dmrg}.
+
 \section{Вывод МРФ}
 \subsection{МРФ}
 \subsection{Задача вывода}
