@@ -5,7 +5,7 @@
 \dimen0\dimexpr\extrarowheight + \ht0-\dp0\relax
 \setbox0\hbox{\raise-.5\dimen0\box0}%
 \ht0=\dimexpr\ht0+\extrarowheight\relax
-\dp0=\dimexpr\dp0+\extrarowheight\relax 
+\dp0=\dimexpr\dp0+\extrarowheight\relax
 \box0
 }
 
@@ -211,7 +211,7 @@
     morekeywords={*,...},           % if you want to add more keywords to the set
     inputencoding=utf8,             % кодировка кода
     xleftmargin={\lmarg},           % Чтобы весь код и полоска с номерами строк была смещена влево, так чтобы цифры не вылезали за пределы текста слева
-} 
+}
 
 %http://tex.stackexchange.com/questions/26872/smaller-frame-with-listings
 % Окружение, чтобы листинг был компактнее обведен рамкой, если она задается, а не на всю ширину текста
@@ -220,7 +220,7 @@
 {\lstset{#1}\VerbatimEnvironment\begin{VerbatimOut}{VerbEnv.tmp}}
 {\end{VerbatimOut}\settowidth\@tempdima{%
         \lstinputlisting{VerbEnv.tmp}}
-    \minipage{\@tempdima}\lstinputlisting{VerbEnv.tmp}\endminipage}    
+    \minipage{\@tempdima}\lstinputlisting{VerbEnv.tmp}\endminipage}
 \makeatother
 
 
@@ -327,3 +327,16 @@
 \renewcommand{\chi}{\upchi}
 \renewcommand{\psi}{\uppsi}
 \renewcommand{\omega}{\upomega}
+
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\DeclareMathOperator{\rank}{r}
+\DeclareMathOperator{\const}{const}
+\DeclareMathOperator{\sumall}{sum}
+\DeclareMathOperator{\round}{round}
+\DeclareMathOperator{\ttrank}{TT-rank}
+\DeclareMathOperator{\ttround}{TT-round}
+% \DeclareMathOperator{\grad}{grad}
+\renewcommand{\vec}[1]{\boldsymbol{#1}}
+\newcommand{\tens}[1]{\boldsymbol{\mathcal{#1}}}
+\newcommand{\tensel}[1]{\mathcal{#1}}
+\newcommand{\alert}[1]{\textbf{#1}}

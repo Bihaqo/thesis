@@ -1,198 +1,99 @@
-\chapter{Оформление различных элементов} \label{chapt1}
+% \cite[с.~54]{Sokolov}
+\chapter{Основные понятия} \label{chap:definitions}
 
-\section{Форматирование текста} \label{sect1_1}
+\section{Разложение в тензорный поезд} \label{sec:tt-decomposition}
 
-Мы можем сделать \textbf{жирный текст} и \textit{курсив}.
+% \begin{figure}[t]
+%   % \vskip 0.2in
+%   \begin{center}
+% 	% \resizebox{0.4\textwidth}{!}{
+%     \def\svgwidth{7cm}
+%     \normalsize
+%     \includesvg{figures/TT}
+%     % }
+%     \caption{Иллюстрация разложения в Тензорный Поезд для тензора $\tens{A}$ размера $3 \times 4 \times 4 \times 3$ все ТТ-ранги которого равны $3$. \label{fig:TT}}
+%     \end{center}
+%     % \vskip -0.2in
+% \end{figure}
 
-%\newpage
-%============================================================================================================================
-
-\section{Ссылки} \label{sect1_2}
-Сошлёмся на библиографию. Одна ссылка: \cite[с.~54]{Sokolov}\cite[с.~36]{Gaidaenko}. Две ссылки: \cite{Sokolov,Gaidaenko}. Много ссылок:  \cite[с.~54]{Lermontov,Management,Borozda} \cite{Lermontov,Management,Borozda,Marketing,Constitution,FamilyCode,Gost.7.0.53,Razumovski,Lagkueva,Pokrovski,Sirotko,Lukina,Methodology,Encyclopedia,Nasirova,Berestova,Kriger}. И ещё немного ссылок: \cite{Article,Book,Booklet,Conference,Inbook,Incollection,Manual,Mastersthesis,Misc,Phdthesis,Proceedings,Techreport,Unpublished}. \cite{medvedev2006jelektronnye, CEAT:CEAT581, doi:10.1080/01932691.2010.513279,Gosele1999161,Li2007StressAnalysis, Shoji199895,test:eisner-sample,AB_patent_Pomerantz_1968,iofis_patent1960}
-
-%Попытка реализовать несколько ссылок на конкретные страницы для стандартной реализации:[\citenum{Sokolov}, с.~54; \citenum{Gaidaenko}, с.~36].
-
-%Несколько источников мультицитата \cites[vii--x, 5, 7]{Sokolov}[v--x, 25, 526]{Gaidaenko} поехали дальше
-
-Ссылки на собственные работы:~\cite{vakbib1, confbib1}
-
-Сошлёмся на приложения: Приложение \ref{AppendixA}, Приложение \ref{AppendixB2}.
-
-Сошлёмся на формулу: формула \eqref{eq:equation1}.
-
-Сошлёмся на изображение: рисунок \ref{img:knuth}.
-
-%\newpage
-%============================================================================================================================
-
-\section{Формулы} \label{sect1_3}
-
-Благодаря пакету \textit{icomma}, \LaTeX~одинаково хорошо воспринимает в качестве десятичного разделителя и запятую ($3,1415$), и точку ($3.1415$).
-
-\subsection{Ненумерованные одиночные формулы} \label{subsect1_3_1}
-
-Вот так может выглядеть формула, которую необходимо вставить в строку по тексту: $x \approx \sin x$ при $x \to 0$.
-
-А вот так выглядит ненумерованая отдельностоящая формула c подстрочными и надстрочными индексами:
-\[
-(x_1+x_2)^2 = x_1^2 + 2 x_1 x_2 + x_2^2
-\]
-
-При использовании дробей формулы могут получаться очень высокие:
-\[
-  \frac{1}{\sqrt{2}+
-  \displaystyle\frac{1}{\sqrt{2}+
-  \displaystyle\frac{1}{\sqrt{2}+\cdots}}}
-\]
-
-В формулах можно использовать греческие буквы:
-\[
-\alpha\beta\gamma\delta\epsilon\varepsilon\zeta\eta\theta\vartheta\iota\kappa\lambda\\mu\nu\xi\pi\varpi\rho\varrho\sigma\varsigma\tau\upsilon\phi\varphi\chi\psi\omega\Gamma\Delta\Theta\Lambda\Xi\Pi\Sigma\Upsilon\Phi\Psi\Omega
-\]
-
-\def\slantfrac#1#2{ \hspace{3pt}\!^{#1}\!\!\hspace{1pt}/
-  \hspace{2pt}\!\!_{#2}\!\hspace{3pt}
-} %Макрос для красивых дробей в строчку (например, 1/2)
-Для красивых дробей (например, в индексах) можно добавить макрос
-\verb+\slantfrac+ и писать $\slantfrac{1}{2}$ вместо $1/2$.
-%\newpage
-%============================================================================================================================
-
-\subsection{Ненумерованные многострочные формулы} \label{subsect1_3_2}
-
-Вот так можно написать две формулы, не нумеруя их, чтобы знаки равно были строго друг под другом:
-\begin{align}
-  f_W & =  \min \left( 1, \max \left( 0, \frac{W_{soil} / W_{max}}{W_{crit}} \right)  \right), \nonumber \\
-  f_T & =  \min \left( 1, \max \left( 0, \frac{T_s / T_{melt}}{T_{crit}} \right)  \right), \nonumber
-\end{align}
-
-Выровнять систему ещё и по переменной $ x $ можно, используя окружение \verb|alignedat| из пакета \verb|amsmath|. Вот так: 
-\[
-    |x| = \left\{
-    \begin{alignedat}{2}
-        &&x, \quad &\text{eсли } x\geqslant 0 \\
-        &-&x, \quad & \text{eсли } x<0
-    \end{alignedat}
-    \right.
-\]
-Здесь первый амперсанд (в исходном \LaTeX описании формулы) означает выравнивание по~левому краю, второй "--- по~$ x $, а~третий "--- по~слову <<если>>. Команда \verb|\quad| делает большой горизонтальный пробел.
-
-Ещё вариант:
-\[
-    |x|=
-    \begin{cases}
-    \phantom{-}x, \text{если } x \geqslant 0 \\
-    -x, \text{если } x<0
-    \end{cases}
-\]
-
-Кроме того, для  нумерованых формул \verb|alignedat|  делает вертикальное
-выравнивание номера формулы по центру формулы. Например,  выравнивание компонент вектора:
+Будем говорить, что $n$-мерный тензор~$\mathbf{A}$ представлен в TT\hyp{}формате, если для всех размерностей~$i=1,\ldots,n$ и всех значений индексов по этой размерности~$x_i = 1, \ldots, d_i$ ($d = \max_{i=1,\ldots,n} d_i$) существуют матрицы~$G_i^{\mathbf{A}}[x_i]$, такие, что каждый элемент тензора~$\mathbf{A}$ представим в виде произведения матриц (см Рис.~\ref{fig:TT}):
 \begin{equation}
- \label{eq:2p3}
- \begin{alignedat}{2}
-{\mathbf{N}}_{o1n}^{(j)} = \,{\sin} \phi\,n\!\left(n+1\right)
-         {\sin}\theta\,
-         \pi_n\!\left({\cos} \theta\right)
-         \frac{
-               z_n^{(j)}\!\left( \rho \right)
-              }{\rho}\,
-           &{\boldsymbol{\hat{\mathrm e}}}_{r}\,+   \\
-+\,
-{\sin} \phi\,
-         \tau_n\!\left({\cos} \theta\right)
-         \frac{
-            \left[\rho z_n^{(j)}\!\left( \rho \right)\right]^{\prime}
-              }{\rho}\,
-            &{\boldsymbol{\hat{\mathrm e}}}_{\theta}\,+   \\
-+\,
-{\cos} \phi\,
-         \pi_n\!\left({\cos} \theta\right)
-         \frac{
-            \left[\rho z_n^{(j)}\!\left( \rho \right)\right]^{\prime}
-              }{\rho}\,
-            &{\boldsymbol{\hat{\mathrm e}}}_{\phi}\:.
-\end{alignedat}
+\label{TT-format}
+\mathbf{A}(x_1, \dots, x_n) = G_1^{\mathbf{A}}[x_1] G^{\mathbf{A}}_2[x_2] \dotsm G^{\mathbf{A}}_n[x_n].
 \end{equation}
+При этом все матрицы относящиеся к одной и той же размерности $i$ должны иметь одинаковые размеры~$\rank_{i-1}(\mathbf{A}) \times \rank_i(\mathbf{A})$. Чтобы результат матричного произведения~\eqref{TT-format} был равен числу, положим~$\rank_{0}(\mathbf{A}) = \rank_{n}(\mathbf{A}) = 1$. Последовательность~$\left\{\rank_i(\mathbf{A})\right\}_{i=0}^n$ будем называть \emph{TT\hyp{}рангами}~тензора $\mathbf{A}$, а максимальный элемент последовательности~--- \emph{максимальным TT\hyp{}рангом} тензора~$\mathbf{A}$:~$\rank(\mathbf{A}) = \max_{i = 0, \dots, n} \rank_i(\mathbf{A})$.
+Набор матриц~$G^{\mathbf{A}}_i$, соответствующих одному измерению, называется \emph{TT\hyp{}ядром} тензора~$\mathbf{A}$.
+Представление тензора в TT\hyp{}формате будем называть \emph{TT\hyp{}разложением} или \emph{TT\hyp{}представлением}.
 
-Ещё об отступах. Иногда для лучшей <<читаемости>> формул полезно
-немного исправить стандартные интервалы \LaTeX с учётом логической
-структуры самой формулы. Например в формуле~\ref{eq:2p3} добавлен
-небольшой отступ \verb+\,+ между основными сомножителями, ниже
-результат применения всех вариантов отступа:
-\begin{align*}
-\backslash! &\quad f(x) = x^2\! +3x\! +2 \\
-  \mbox{по-умолчанию} &\quad f(x) = x^2+3x+2 \\
-\backslash, &\quad f(x) = x^2\, +3x\, +2 \\
-\backslash{:} &\quad f(x) = x^2\: +3x\: +2 \\
-\backslash; &\quad f(x) = x^2\; +3x\; +2 \\
-\backslash \mbox{space} &\quad f(x) = x^2\ +3x\ +2 \\
-\backslash \mbox{quad} &\quad f(x) = x^2\quad +3x\quad +2 \\
-\backslash \mbox{qquad} &\quad f(x) = x^2\qquad +3x\qquad +2
-\end{align*}
+Для любого $n$-мерного тензора~$\mathbf{A}$ существует TT\hyp{}представление с максимальным TT\hyp{}рангом $\rank(\mathbf{A}) \leq d^{\frac{n}{2}}$~(см. теорему~2.1 Оселедца \cite{oseledets2011ttMain}). Отметим, что TT\hyp{}представление тензора не единственно.
 
 
-Можно использовать разные математические алфавиты:
-\begin{align}
-\mathcal{ABCDEFGHIJKLMNOPQRSTUVWXYZ} \nonumber \\
-\mathfrak{ABCDEFGHIJKLMNOPQRSTUVWXYZ} \nonumber \\
-\mathbb{ABCDEFGHIJKLMNOPQRSTUVWXYZ} \nonumber
-\end{align}
+Для обозначения~$(\alpha_{i-1}, \alpha_{i})$-ого элемента матрицы~$G_i^{\mathbf{A}}[x_i]$ будет использоваться символ~$G_i^{\mathbf{A}}[x_i](\alpha_{i-1}, \alpha_{i})$.
+Пользуясь определением произведения матриц, можно переписать формулу~\eqref{TT-format} через элементы TT\hyp{}ядер:
 
-Посмотрим на систему уравнений на примере аттрактора Лоренца:
-
-\[ 
-\left\{
-  \begin{array}{rl}
-    \dot x = & \sigma (y-x) \\
-    \dot y = & x (r - z) - y \\
-    \dot z = & xy - bz
-  \end{array}
-\right.
-\]
-
-А для вёрстки матриц удобно использовать многоточия:
-\[ 
-\left(
-  \begin{array}{ccc}
-  	a_{11} & \ldots & a_{1n} \\
-  	\vdots & \ddots & \vdots \\
-  	a_{n1} & \ldots & a_{nn} \\
-  \end{array}
-\right)
-\]
-
-
-%\newpage
-%============================================================================================================================
-\subsection{Нумерованные формулы} \label{subsect1_3_3}
-
-А вот так пишется нумерованая формула:
 \begin{equation}
-  \label{eq:equation1}
-  e = \lim_{n \to \infty} \left( 1+\frac{1}{n} \right) ^n
+	\label{TT-format-sum}
+	\mathbf{A}(\vec{x}) =
+	\sum_{\alpha_0, \ldots, \alpha_n} G^{\mathbf{A}}_1[x_1](\alpha_0, \alpha_1) \ldots G^{\mathbf{A}}_n[x_n](\alpha_{n-1}, \alpha_n).
 \end{equation}
 
-Нумерованых формул может быть несколько:
-\begin{equation}
-  \label{eq:equation2}
-  \lim_{n \to \infty} \sum_{k=1}^n \frac{1}{k^2} = \frac{\pi^2}{6}
-\end{equation}
+Для хранения всех элементов тензора~$\mathbf{A}$ требуется~$\prod_{i=1}^n d_i$ ячеек памяти, тогда как хранение~$\mathbf{A}$ в TT\hyp{}формате требует~$\sum_{i=1}^n d_i \rank_{i-1}(\mathbf{A}) \rank_{i}(\mathbf{A})$. Таким образом, TT\hyp{}представление тензора с низкими TT\hyp{}рангами существенно компактнее перечисления его элементов.
 
-Впоследствии на формулы (\ref{eq:equation1}) и (\ref{eq:equation2}) можно ссылаться.
+Существуют две различные постановки задачи перевода тензора в TT\hyp{}формат: точное TT\hyp{}представление (алгоритм TT-SVD~\cite{oseledets2011ttMain}, применимый для небольших тензоров), и построение приближенного TT\hyp{}представления по небольшому подмножеству элементов тензора. Наилучшим из алгоритмов второго класса в настоящее время является метод AMEn-cross~\cite{dolgov2013amenCross}.
 
-Сделать так, чтобы номер формулы стоял напротив средней строки, можно, используя окружение \verb|multlined| (пакет \verb|mathtools|) вместо \verb|multline| внутри окружения \verb|equation|. Вот так:
-\begin{equation} % \tag{S} % tag - вписывает свой текст 
-  \label{eq:equation3}
-    \begin{multlined}
-        1+ 2+3+4+5+6+7+\dots + \\ 
-        + 50+51+52+53+54+55+56+57 + \dots + \\ 
-        + 96+97+98+99+100=5050 
-    \end{multlined}
-\end{equation}
+\begin{table}[t]
+\caption{Операции, которые можно эффективно выполнять над тензорами в TT\hyp{}формате. Для каждой операции указана её вычислительная сложность и TT\hyp{}ранг результата для ситуаций, когда результат является тензором в TT\hyp{}формате.}
+\label{TT-tensor-operations}
+\vskip 0.05in
+\begin{center}
+\begin{small}
+% \begin{sc}
+\begin{tabular}{l@{\;\;}l@{\;\;}l}
+\hline
+Операция & Ранг результата & Вычислительная сложность \\
+\hline
+% \abovespace
+$\mathbf{C} = \mathbf{A} \cdot \const$      & $\rank(\mathbf{C}) = \rank(\mathbf{A})$             & $O(d  \rank(\mathbf{A}))$\\
+$\mathbf{C} = \mathbf{A} + \const$          & $\rank(\mathbf{C}) = \rank(\mathbf{A})\!+\!1$         & $O(n  d  \rank^2(\mathbf{A}))$\\
+$\mathbf{C} = \mathbf{A} + \mathbf{B}$           & $\rank(\mathbf{C}) \leq \rank(\mathbf{A})\!+\!\rank(\mathbf{B})$       & $O(n  d \, (\rank(\mathbf{A}) + \rank(\mathbf{B}))^2)$\\
+$\mathbf{C} = \mathbf{A} \odot \mathbf{B}$       & $\rank(\mathbf{C}) \leq \rank(\mathbf{A})  \rank(\mathbf{B})$   & $O(n  d  \rank^2(\mathbf{A})  \rank^2(\mathbf{B}))$\\
+$\vec{c}=M\vec{b}$                          & $\rank(\vec{c}) \leq \rank(M) \rank(\vec{b})$       & $O(n d^2 \rank^2(M) \rank^2(\vec{b}))$\\
+%\belowspace
+$\sumall \mathbf{A}$                & --                      & $O(n  d  \rank^2(\mathbf{A}))$\\
+$\left \| \mathbf{A} \right \|_F$       & --                      & $O(n  d  \rank^3(\mathbf{A}))$\\
+% \belowspace
+$\mathbf{C} = \round(\mathbf{A}, \varepsilon)$ & $\rank(\mathbf{C}) \leq \rank(\mathbf{A})$          & $O(n d \rank^3(\mathbf{A}))$\\
+\hline
+\end{tabular}
+% \end{sc}
+\end{small}
+\end{center}
+\vskip -0.1in
+\end{table}
 
-Используя команду \verb|\labelcref| из пакета \verb|cleveref|, можно
-красиво ссылаться сразу на несколько формул
-(\labelcref{eq:equation1,eq:equation3,eq:equation2}), даже перепутав
-порядок ссылок \verb|(\labelcref{eq:equation1,eq:equation3,eq:equation2})|.
+Одним из основных достоинств TT\hyp{}формата является возможность эффективно применять различные операции к тензорам в TT\hyp{}формате:
+умножение тензора на константу, добавление константы к тензору, поточечное сложение и умножение тензоров (результат этих операций~--- это тензор в TT\hyp{}формате с возросшими TT\hyp{}рангами); подсчет глобальных характеристик тензора, таких как сумма всех элементов или норма Фробениуса. Обзор операций, которые используются в этой статье, приведен в таблице~\ref{TT-tensor-operations} (детальный обзор проведен Оселедцом~\cite{oseledets2011ttMain}).
+Примение операций к TT\hyp{}тензорам увеличивает TT\hyp{}ранги даже в том случае, когда существует низкоранговое TT\hyp{}представление результата. Чтобы контролировать рост TT\hyp{}рангов существует операция TT\hyp{}округления.
+По TT\hyp{}представлению тензора~$\mathbf{A}$ и относительной точности~$\varepsilon \geq 0$ операция TT\hyp{}округления $\round(\mathbf{A},\varepsilon)$ найдет тензор~$\widehat{\mathbf{A}}$ в TT\hyp{}формате который, во-первых, достаточно близок к тензору~$\mathbf{A}$: $\| \mathbf{A} - \mathbf{\widehat{A}} \|_F \leq \varepsilon  \| \mathbf{A}  \|_F$ и, во-вторых, обладает минимальными TT\hyp{}рангами среди всех тензоров~$\mathbf{B}: \| \mathbf{A} - \mathbf{B} \|_F \leq \frac{\varepsilon}{\sqrt{n - 1}}  \| \mathbf{A}  \|_F$. Наличие операции TT\hyp{}округления позволяет применять последовательность операций к тензорам (например, округляя результат после применения каждой операции), контролируя рост TT\hyp{}рангов.
 
+
+Для повышения эффективности работы с векторами и матрицами специальным образом вводятся понятия TT\hyp{}формата вектора и ТТ\hyp{}формата матрицы.
+Пусть существует отображение между индексами вектора~$\vec{b}\in\mathbb{R}^q$ и $n$-мерными векторами $\vec{y} = (y_1, \dots, y_n)$\footnote{
+Количество элементов в векторе~$\vec{b}$ равно $\prod_{i = 1}^n d_i$.
+}.
+\emph{TT\hyp{}представлением вектора~$\vec{b}$} называется TT\hyp{}представление тензора~$\mathbf{B}(y_1, \dots, y_n)$, содержащего все элементы~$\vec{b}$.
+
+
+Определим понятие TT\hyp{}формата для матриц. Пусть существует отображение между индексами строк и столбцов матрицы~$M$ в $n$-мерные вектора $\vec{x}$ и $\vec{y}$ соответственно. Переупорядочим размерности и представим получившийся тензор в TT\hyp{}формате:
+\begin{equation*}
+\mathbf{M}((x_1, y_1),\ldots,(x_n,y_n))=G_1^{\mathbf{M}}[x_1,y_1]\dots G_n^{\mathbf{M}}[x_n,y_n],
+\end{equation*}
+где $G_i$, $i = 1,\dots,n$ --- это TT\hyp{}ядра, а~$G_i^{\mathbf{M}}[x_i,y_i]$ --- матрицы. \emph{TT\hyp{}представлением матрицы~$M$} будем называть TT\hyp{}представление тензора~$\mathbf{M}$. Отметим, что матрица в TT\hyp{}формате не обязана быть квадратной, т.~к. $x_i$ и $y_i$ могут принимать разное число возможных значений
+
+
+Для матрицы~$M$ и вектора~$\vec{b}$ представленных в TT\hyp{}формате можно эффективно вычислять произведение $\vec{c}=M\vec{b}$ (если соответствующие размерности совпадают). Результатом этой операции является вектор~$\vec{c}$ в TT\hyp{}формате с рангами равными произведению рангов~$M$ и $\vec{b}$: $\rank_i(\vec{c}) = \rank_i(M) \rank_i(\vec{b})$.
+
+Наличие специального определения TT\hyp{}формата для векторов и матриц позволяет применять операции линейной алгебры к задачам большого размера. Например, для поиска минимального элемента тензора можно вытянуть его в диагональную матрицу и применить приближенный метод поиска минимальных собственных значений основанный на алгоритме DMRG~\cite{khoromskij2010dmrg}.
+
+\section{Markov Random Field} \label{sec:mrf}
+\section{Neural Networks} \label{sec:cnn}
