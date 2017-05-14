@@ -3,18 +3,14 @@
 
 \section{Разложение в тензорный поезд} \label{sec:tt-decomposition}
 
-% \begin{figure}[t]
-%   % \vskip 0.2in
-%   \begin{center}
-% 	% \resizebox{0.4\textwidth}{!}{
-%     \def\svgwidth{7cm}
-%     \normalsize
-%     \includesvg{figures/TT}
-%     % }
-%     \caption{Иллюстрация разложения в Тензорный Поезд для тензора $\tens{A}$ размера $3 \times 4 \times 4 \times 3$ все ТТ-ранги которого равны $3$. \label{fig:TT}}
-%     \end{center}
-%     % \vskip -0.2in
-% \end{figure}
+\begin{figure}[ht]
+  \begin{center}
+    \def\svgwidth{10cm}
+    \normalsize
+    \includesvg{images/TT}
+    \caption{Иллюстрация разложения в Тензорный Поезд для тензора $\tens{A}$ размера $3 \times 4 \times 4 \times 3$ все ТТ-ранги которого равны $3$. \label{fig:TT}}
+    \end{center}
+\end{figure}
 
 Будем говорить, что $n$-мерный тензор~$\mathbf{A}$ представлен в TT\hyp{}формате, если для всех размерностей~$i=1,\ldots,n$ и всех значений индексов по этой размерности~$x_i = 1, \ldots, d_i$ ($d = \max_{i=1,\ldots,n} d_i$) существуют матрицы~$G_i^{\mathbf{A}}[x_i]$, такие, что каждый элемент тензора~$\mathbf{A}$ представим в виде произведения матриц (см Рис.~\ref{fig:TT}):
 \begin{equation}
