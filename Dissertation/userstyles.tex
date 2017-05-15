@@ -345,3 +345,50 @@
 \newcommand{\includesvg}[1]{
   \input{#1.pdf_tex}%
 }
+
+\newtheorem{theorem}{Теорема}
+\newtheorem{lemma}{Лемма}
+\newtheorem{corollary}{Следствие}
+\newtheorem{definition}{Определение}
+
+\usepackage{algorithm}
+\usepackage[noend]{algorithmic}
+% переопределения (русификация) управляющих конструкций алгоритма:
+\newcommand{\algKeyword}[1]{{\textbf #1}}
+\renewcommand{\algorithmicrequire}{\rule{0pt}{2.5ex}\algKeyword{Вход:}}
+\renewcommand{\algorithmicensure}{\algKeyword{Выход:}}
+\renewcommand{\algorithmicend}{\algKeyword{конец}}
+\renewcommand{\algorithmicif}{\algKeyword{если}}
+\renewcommand{\algorithmicthen}{\algKeyword{то}}
+\renewcommand{\algorithmicelse}{\algKeyword{иначе}}
+\renewcommand{\algorithmicelsif}{\algorithmicelse\ \algorithmicif}
+\renewcommand{\algorithmicendif}{\algorithmicend\ \algorithmicif}
+\renewcommand{\algorithmicfor}{\algKeyword{для}}
+\renewcommand{\algorithmicforall}{\algKeyword{\rusenвсех}{fo}}
+\renewcommand{\algorithmicto}{\algKeyword{до}}
+\renewcommand{\algorithmicdo}{}
+\renewcommand{\algorithmicendfor}{\algorithmicend\ \algorithmicfor}
+\renewcommand{\algorithmicwhile}{\algKeyword{пока}}
+\renewcommand{\algorithmicendwhile}{\algorithmicend\ \algorithmicwhile}
+\renewcommand{\algorithmicloop}{\algKeyword{цикл}}
+\renewcommand{\algorithmicendloop}{\algorithmicend\ \algorithmicloop}
+\renewcommand{\algorithmicrepeat}{\algKeyword{повторять}}
+\renewcommand{\algorithmicuntil}{\algKeyword{пока}}
+%\renewcommand{\algorithmiccomment}[1]{{\footnotesize // #1}}
+\renewcommand{\algorithmiccomment}[1]{{\quad\sl // #1}}
+
+% Мои дополнительные команды для описания алгоритмов
+\newcommand{\Procedure}[1]{{\tt #1}}
+\newcommand{\Proc}[1]{\text{\tt #1}}
+\def\BEGIN{\\[1ex]\hrule\vskip 1ex}
+\def\PARAMS{\renewcommand{\algorithmicrequire}{\algKeyword{Параметры:}}\REQUIRE}
+\def\END{\vskip 1ex\hrule\vskip 1ex}
+\def\RET{\algKeyword{вернуть} }
+\def\EXIT{\algKeyword{выход}}
+\def\IFTHEN#1{\STATE\algorithmicif\ #1 {\algorithmicthen}}
+\def\PROCEDURE#1{\medskip\STATE\algKeyword{ПРОЦЕДУРА} \Procedure{#1}}
+
+% Ещё несколько переопределений для алгоритмов
+\renewcommand{\listalgorithmname}{Список алгоритмов}
+\floatname{algorithm}{Алгоритм}
+\floatplacement{algorithm}{!t}

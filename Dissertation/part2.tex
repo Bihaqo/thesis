@@ -1,4 +1,510 @@
 \chapter{Вывод в Марковских Случайных Полях} \label{chap:mrf}
 \section{Марковскиe Случайныe Поля} \label{sec:mrf}
+
+Рассмотрим гиперграф $\mathcal{G} = (\mathcal{V}, \mathcal{E})$ с конечным множеством вершин~$\mathcal{V}$ и гиперебер~$\mathcal{E}$.
+Пусть все вершины пронумерованы от~$1$ до~$n$, а все гиперребра от~$1$ до~$m$.
+
+Сопоставим каждой вершине~$i = 1,\ldots,n$ переменную~$x_i$ принимающую значения из множества $\mathcal{X}_i = \{1,\dots,d_i\}$.
+Обозначим множество вершин, входящих в гиперребро~$\ell = 1, \ldots, m$, через ~$\vec{x}^\ell$.
+Каждому гиперребру~$\ell = 1, \ldots, m$ сопоставим вещественнозначную функцию~$\mathbf{\Theta}_\ell$, определенную на совместной области определения переменных из~$\vec{x}^\ell$. Функцию~$\mathbf{\Theta}_\ell$ будем называть \emph{потенциалом}.
+
+\emph{Функцией энергии} марковского случайного поля (Markov random field, MRF) заданного на гиперграфе~$\mathcal{G}$, назовем сумму всех потенциалов:
+$
+\mathbf{E}(\vec{x}) = \sum_{\ell = 1}^{m} \mathbf{\Theta}_\ell(\vec{x}^{\ell}).
+$
+
+Экспонента от минус энергии задает \emph{ненормированное распределение Гиббса}:
+$
+\widehat{\mathbf{P}}(\vec{x}) = \exp(-\mathbf{E}(\vec{x})).
+$
+Для обозначения нормировочной константы будет использоваться символ~$Z$, $Z = \sum_{\vec{x}} \widehat{\mathbf{P}}(\vec{x})$. Функции $\mathbf{\Psi}_\ell(\vec{x}^\ell) = \exp(-\mathbf{\Theta}_\ell(\vec{x}^{\ell}))$ будем называть \emph{факторами} марковского случайного поля.
+
+Как энергия, так и ненормированная вероятность являются $n$-мерными тензорами. Потенциалы и факторы можно интерпретировать как $n$-мерные тензоры, если добавить в них переменные, от которых они зависят несущественно: $\mathbf{\Theta}_\ell (\vec{x}^\ell) = \mathbf{\Theta}_\ell (\vec{x})$. Тензоры энергии и вероятности можно определить следующим образом:
+$
+\mathbf{E} = \sum_{\ell = 1}^m \mathbf{\Theta}_\ell
+$
+и
+$
+\widehat{\mathbf{P}} =   \bigodot_{\ell = 1}^m \mathbf{\Psi}_\ell.
+$
 \section{Основные подходы к задаче вывода} \label{sec:mrf-approaches}
+
+Существует две основных постановки задачи вывода в графической модели: минимизация энергии и вероятностный вывод.
+На текущий момент, задача минимизации энергии хорошо изучена. В последних экспериментальных исследованиях Каппес и др. показывают~\cite{Kappes13comparison}, что для многих актуальных задач текущие методы дают достаточно хорошие результаты. Особенно много внимания уделено парно-сепарабельным марковским случайным полям (см. детальный обзор Каппеса и др.~\cite{Kappes13comparison}).
+Под вероятностным выводом понимается множество различных задач. В этой работе уделено внимание двум из них: вычислению нормировочной константы по ненормированному распределению марковского случайного поля, и вычислению маргинальных распределений.
+Вторая проблема является более сложной, так как для её решения зачастую требуется вычисление нормировочной константы.
+
+Можно выделить следующие группы методов подсчета нормировочной константы: методы, основанные на генерации выборки (например~Annealed Importance Sampling~\cite{neal01ais,grosse13}), методы передачи сообщений (классический Loopy Belief Propagation~\cite{kschischang01bp} и его многочисленные модификации), методы, основанные на минимизации KL\hyp{}дивергенции (Mean Field~\cite{wainwright08gm} и Expectation Propagation~\cite{minka04treeep}), методы декомпозиции графов (Tree\hyp{}Reweighted Message-passing~\cite{wainwright05trw}) и методы, основанные на минимизации энергии (randomized MAP\hyp{}predictors~\cite{hazan13} и недавно предложенный метод WISH~\cite{ermon13wish}).
+Для решения задачи вычисления маргинальных распределений подходят более простые методы, такие как Gibbs sampling~\cite{wainwright08gm}.
+
 \section{Тензорный алгоритм вывода} \label{sec:tt-mrf}
+\subsection{Тензоры марковского случайного поля} \label{sec:mrf-as-tensor}
+
+\begin{figure}
+\vskip 0.2in
+\begin{center}
+\resizebox{0.5\columnwidth}{!}{
+\begin{tikzpicture}[>=latex',line join=bevel,]
+	\tikzstyle{every node}=[font=\fontsize{25}{1}]
+  \pgfsetlinewidth{1bp}
+%%
+\pgfsetcolor{black}
+  % Edge: a_0 -- G_1
+  \draw [] (56.23bp,18bp) .. controls (62.06bp,18bp) and (67.889bp,18bp)  .. (73.719bp,18bp);
+  % Edge: dots -- G_n
+  \draw [] (346bp,18bp) .. controls (351.98bp,18bp) and (357.95bp,18bp)  .. (363.93bp,18bp);
+  % Edge: G_2 -- dots
+  \draw [] (274bp,18bp) .. controls (279.98bp,18bp) and (285.95bp,18bp)  .. (291.93bp,18bp);
+  % Edge: G_1 -- a_1
+  \draw [] (128.09bp,18bp) .. controls (133.95bp,18bp) and (139.81bp,18bp)  .. (145.66bp,18bp);
+  % Edge: x_n -- G_n
+  \draw [] (391bp,71.831bp) .. controls (391bp,61bp) and (391bp,47.288bp)  .. (391bp,36.413bp);
+  % Edge: G_n -- a_n
+  \draw [] (418.09bp,18bp) .. controls (423.95bp,18bp) and (429.81bp,18bp)  .. (435.66bp,18bp);
+  % Edge: x_1 -- G_1
+  \draw [] (101bp,71.831bp) .. controls (101bp,61bp) and (101bp,47.288bp)  .. (101bp,36.413bp);
+  % Edge: x_2 -- G_2
+  \draw [] (247bp,71.831bp) .. controls (247bp,61bp) and (247bp,47.288bp)  .. (247bp,36.413bp);
+  % Edge: a_1 -- G_2
+  \draw [] (202.23bp,18bp) .. controls (208.06bp,18bp) and (213.89bp,18bp)  .. (219.72bp,18bp);
+  % Node: dots
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (319bp,18bp) node {$\ldots$};
+\end{scope}
+  % Node: a_1
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (174bp,18bp) ellipse (28bp and 18bp);
+  \draw (174bp,18bp) node {$\alpha_1$};
+\end{scope}
+  % Node: a_0
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (28bp,18bp) ellipse (28bp and 18bp);
+  \draw (28bp,18bp) node {$\alpha_0$};
+\end{scope}
+  % Node: x_n
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (391bp,90bp) ellipse (28bp and 18bp);
+  \draw (391bp,90bp) node {$x_n$};
+\end{scope}
+  % Node: G_1
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (128bp,36bp) -- (74bp,36bp) -- (74bp,0bp) -- (128bp,0bp) -- cycle;
+  \draw (101bp,18bp) node {$G_1$};
+\end{scope}
+  % Node: G_2
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (274bp,36bp) -- (220bp,36bp) -- (220bp,0bp) -- (274bp,0bp) -- cycle;
+  \draw (247bp,18bp) node {$G_2$};
+\end{scope}
+  % Node: G_n
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (418bp,36bp) -- (364bp,36bp) -- (364bp,0bp) -- (418bp,0bp) -- cycle;
+  \draw (391bp,18bp) node {$G_n$};
+\end{scope}
+  % Node: x_2
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};ПОмое
+  \pgfsetstrokecolor{strokecol}
+  \draw (247bp,90bp) ellipse (28bp and 18bp);
+  \draw (247bp,90bp) node {$x_2$};
+\end{scope}
+  % Node: x_1
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (101bp,90bp) ellipse (28bp and 18bp);
+  \draw (101bp,90bp) node {$x_1$};
+\end{scope}
+  % Node: a_n
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (464bp,18bp) ellipse (28bp and 18bp);
+  \draw (464bp,18bp) node {$\alpha_n$};
+\end{scope}
+%
+\end{tikzpicture}}
+\caption{Графическая модель, полученная в результате TT\hyp{}разложения тензора вероятности~$\mathbf{P}(x_1, \ldots, x_n)$.}
+\label{fig:TT-graphical-model}
+\end{center}
+\vskip -0.2in
+\end{figure}
+
+
+Традиционно для компактного представления энергии используется набор потенциалов MRF. TT\hyp{}разложение является альтернативным способом компактного представления тензора энергии. Эффективность применения TT\hyp{}формата для тензора энергии и тензора вероятности обсуждается в разделах~\ref{sec:energy-representation} и~\ref{sec:prob-representation}.
+
+
+TT\hyp{}представление тензора совместного распределения $\mathbf{P} = \mathbf{\widehat{P}} / Z$ обладает особой интерпретацией. Переменные~$\alpha_i$, $i=0,\ldots,n$, (см.~\eqref{TT-format-sum}) можно интерпретировать как скрытые переменные в графической модели типа цепочка (рис.~\ref{fig:TT-graphical-model}). Маргинализация по ним дает исходную вероятность:
+
+\begin{equation}
+\mathbf{P}(\vec{x}) = \sum_{\vec{\alpha}} \mathbf{P}(\vec{x}, \vec{\alpha}),
+\end{equation}
+где~$\mathbf{P}(\vec{x}, \vec{\alpha})$ --- совместное распределение вероятностей на векторы~$\vec{x}$ и~$\vec{\alpha}$.
+Каждая добавленная переменная $\alpha_i$ может принимать значения от $1$ до соответствующего TT\hyp{}ранга $\rank_i(\mathbf{P})$.
+
+
+\subsubsection{TT\hyp{}формат для тензора энергии}
+\label{sec:energy-representation}
+
+В этом разделе предложен алгоритм для представление тензора энергии~$\mathbf{E}$ в TT\hyp{}формате. Предлагаемый алгоритм существенно превосходит AMEn-cross по скорости и точности.
+
+Алгоритм состоит из трех основных шагов.
+
+Шаг 1. Найдем TT\hyp{}представление для каждого потенциала~$\mathbf{\Theta}_\ell(\vec{x}^\ell)$, который будем интерпретировать как тензор зависящий только от переменных~$\vec{x}^\ell$. Обычно потенциалы существенно зависят лишь от небольшого числа переменных и можно искать их TT\hyp{}представление с помощью алгоритма TT-SVD.
+% Отметим, что в случае парных потенциалов алгоритм TT-SVD эквивалентен сингулярному разложению (SVD) матрицы задающей потенциал (??? Ведь опять SVD дает три матрицы).
+% В некоторых случаях удаётся найти аналитические формулы для TT\hyp{}представления потенциалов (см. раздел~\ref{sec:analitical-potentials}).
+
+Шаг 2. Добавим в каждый тензор~$\mathbf{\Theta}_\ell$ несущественные переменные $x \setminus x^\ell$, сделав его $n$-мерным тензором.
+
+Пусть тензор $\mathbf{\Theta}_\ell$ существенно зависит от $p$ переменных: $\vec{x}^\ell = (x_{i_1}, \ldots, x_{i_p})$, $i_1 < i_2 < \ldots < i_p$. После первого шага алгоритма получим следующее TT\hyp{}представление~$\mathbf{\Theta}_\ell(\vec{x}^\ell)$:
+
+% Продемонстрируем процесс добавление несущественных переменных на примере. Пусть энергия задана на гиперграфе с пятью вершинам, с которыми ассоциированы переменные~$x_1, x_2, x_3, x_4, x_5$, а потенциал~$\mathbf{\Theta}_\ell(\vec{x}^\ell)$ существенно зависит только от $x_1, x_2, x_4$~(т.~е. $\vec{x}^\ell = (x_1, x_2, x_4)$). После первого шага алгоритма получим следующее TT\hyp{}представление~$\mathbf{\Theta}_\ell(\vec{x}^\ell)$:
+\begin{equation}
+\label{energy:tt-for-partial-potential}
+\mathbf{\Theta}_\ell(x_{i_1}, \ldots, x_{i_p}) = \overline{G}^{\mathbf{\Theta}_\ell}_1[x_{i_1}] \ldots \overline{G}^{\mathbf{\Theta}_\ell}_p[x_{i_p}],
+\end{equation}
+где $\overline{G}^{\mathbf{\Theta}_\ell}_k[x_{i_k}]$ --- матрица размера $\overline{\rank}_{k-1} \times \overline{\rank}_k$. Чтобы добавить несущественные размерности, можно, например, положить недостающие ядра равными набору единичных матриц подходящего размера\footnote{$I_k$ используется для обозначения единичной матрицы размера~$k \times k$.}:
+\begin{equation*}
+\begin{aligned}
+G^{\mathbf{\Theta}_\ell}_1[x_1] &\equiv  \ldots \equiv G^{\mathbf{\Theta}_\ell}_{i_1 - 1}[x_{i_1 - 1}] \equiv I_{\overline{\rank}_0} = I_1,\\
+G^{\mathbf{\Theta}_\ell}_{i_1 + 1}[x_{i_1 + 1}] &\equiv \ldots \equiv G^{\mathbf{\Theta}_\ell}_{i_2 - 1}[x_{i_2 - 1}] \equiv I_{\overline{\rank}_1},\\
+&\ldots\\
+G^{\mathbf{\Theta}_\ell}_{i_p + 1}[x_{i_p + 1}] &\equiv \ldots \equiv G^{\mathbf{\Theta}_\ell}_{n}[x_{n}] \equiv I_{\overline{\rank}_p} = I_1,
+\end{aligned}
+\end{equation*}
+где $G^{\mathbf{\Theta}_\ell}_{i_k}[x_{i_k}] = \overline{G}^{\mathbf{\Theta}_\ell}_{k}[x_{i_k}]$. Полученные таким образом TT\hyp{}ядра задают TT\hyp{}формат тензора $\mathbf{\Theta}^\ell(\vec{x})$.
+Отметим, что в процессе данного преобразования максимальный TT\hyp{}ранг~$\mathbf{\Theta}_\ell$ не изменяется.
+
+Шаг 3. Просуммируем полученные на шаге 2 TT\hyp{}тензоры~$\mathbf{\Theta}_\ell$, чтобы получить тензор энергии:
+\begin{equation}
+\label{energy:energy-tensor-as-sum-of-potential-tensors}
+\mathbf{E} = \sum_{\ell=1}^m \mathbf{\Theta}_\ell.
+\end{equation}
+
+Теорема~\ref{energy:theorem-about-rank} содержит верхнюю оценку на максимальный TT\hyp{}ранг тензора, построенного описанным алгоритмом.
+
+\begin{theorem}
+\label{energy:theorem-about-rank}
+Если порядок каждого потенциала не превосходит~$p$, то предложенный алгоритм строит TT\hyp{}представление тензора энергии~$\mathbf{E}$ с максимальным TT\hyp{}рангом, ограниченным сверху следующим образом:
+\begin{equation}
+\label{energy:theorem-about-rank:inequality}
+\rank(\mathbf{E}) \leq d^{\frac{p}{2}} \cdot m.
+\end{equation}
+\end{theorem}
+
+Теорема~\ref{energy:theorem-about-rank} показывает, что можно построить точное низкоранговое TT\hyp{}представления тензора энергии. Отметим, что после шага 3 к тензору энергии можно применить процедуру TT\hyp{}округления, чтобы уменьшить TT\hyp{}ранги, если это возможно.
+
+\begin{proof}[Доказательство теоремы~\ref{energy:theorem-about-rank}]
+Оценим, какими TT\hyp{}рангами обладают факторы после шага~1 алгоритма.
+Из теоремы~2.1~\cite{oseledets2011ttMain} следует, что TT\hyp{}ранги тензора не превосходят~$d^{\frac{n}{2}}$, где $n$ --- это размерность тензора, а $d$ --- максимальное число возможных значений, которые может принимать каждая переменная~$x_i$.
+По условию теоремы, порядок каждого потенциала не превосходит~$p$, а значит после шага~1 верна следующая оценка:
+\begin{equation}
+\label{energy:proof-of-theorem-about-rank:potential-rank-inequality}
+\rank(\mathbf{\Theta_\ell}) \leq d^{\frac{p}{2}}.
+\end{equation}
+
+На шаге~2 максимальный TT\hyp{}ранг потенциалов не возрастает, а значит после шага~2 неравенство (\ref{energy:proof-of-theorem-about-rank:potential-rank-inequality}) всё ещё выполнено.
+
+При суммировании тензоров на шаге~3, TT\hyp{}ранги растут аддитивно. Чтобы завершить доказательство, осталось вспомнить, что всего есть $m$ потенциалов.
+\end{proof}
+
+\subsubsection{TT\hyp{}формат для тензора вероятности}
+\label{sec:prob-representation}
+Алгоритм из раздела~\ref{sec:energy-representation} легко адаптировать для построения TT\hyp{}представления тензора ненормированной вероятности $\widehat{\mathbf{P}}$.
+
+На шагах 1 и 2 алгоритма вместо потенциалов~$\mathbf{\Theta}_\ell$ следует работать с факторами~$\mathbf{\Psi}_{\ell}$. На шаге 3 вместо суммы нужно вычислить поэлементное произведение:
+\begin{equation}
+\widehat{\mathbf{P}} =   \bigodot_{\ell = 1}^{m} \mathbf{\Psi}_{\ell}.
+\end{equation}
+
+Данный алгоритм построит точное TT\hyp{}представление тензора $\widehat{\mathbf{P}}$. Тем не менее, TT\hyp{}ранги~$\widehat{\mathbf{P}}$ экспоненциально зависят от количества вершин (рис.~\ref{fig:ranks-growth}), что делает TT\hyp{}представление тензора вероятности неприменимым на больших задачах. На рис.~\ref{fig:ranks-growth} изображены ранги точного TT-представления тензора энергии и вероятности для MRF разного размера. TT\hyp{}ранги тензора вероятности остаются экспоненциально большими и после округления $\widehat{\mathbf{P}}$ с точностью~$\varepsilon = 10^{-8}$. Таким образом, точного низкорангового TT\hyp{}представления $\widehat{\mathbf{P}}$ не существует.
+
+% \begin{figure}[t]
+% \begin{center}
+% \begin{tabular}{m{0.3cm}@{}m{7cm}}
+% \begin{sideways}\parbox{3.5cm}{\centering\scriptsize максимальный TT\hyp{}ранг }\end{sideways}
+% & \includegraphics[width=7.0cm]{figures/ranks_growth_temp=10,N=12,J=1_v2.pdf}
+% \\
+% & \parbox{7.3cm}{\centering\scriptsize размер решетки Изинга } \\
+% \end{tabular}
+% % \centerline{\includegraphics[width=\columnwidth]{figures/ranks_growth_temp=10,N=12,J=1}}
+% \caption{Максимальный TT\hyp{}ранг тензора энергии~$\mathbf{E}$ и тензора ненормированной вероятности~$\widehat{\mathbf{P}}$ для гомогенной решетки Изинга с температурой равной~10 и весами парных потенциалов равными~$1$. Детали см. в разделе \ref{sec::exp1}. \label{fig:ranks-growth}}
+% \end{center}
+% \end{figure}
+
+
+\subsection{Вычисление нормировочной константы~$Z$}
+\label{sec:partition-function}
+Естественный подход к подсчету нормировочной константы состоит в представлении всего тензора ненормированной вероятности~$\widehat{\mathbf{P}}$ в TT\hyp{}формате и в последующем суммировании всех его элементов. На практике тензор~$\widehat{\mathbf{P}}$ обладает экспоненциально большими TT\hyp{}рангами, и работа с его TT\hyp{}представлением становиться неэффективной. С другой стороны, каждый отдельный фактор графической модели можно точно представить в TT\hyp{}формате. В этом разделе предложен алгоритм подсчета нормировочный константы, который работает с TT\hyp{}представлением отдельных факторов~$\mathbf{\Psi}_{\ell}$, не строя TT\hyp{}представление всего тензора~$\widehat{\mathbf{P}}$.
+
+\subsubsection{Алгоритм}
+Пусть все факторы графической модели уже представлены в TT\hyp{}формате~(см. раздел~\ref{sec:prob-representation}):
+\begin{equation}
+\mathbf{\Psi}_{\ell}(\vec{x}^{\ell}) = \mathbf{\Psi}_{\ell}(\vec{x}) = G^{\mathbf{\Psi}_{\ell}}_1[x_1] \dotsm G^{\mathbf{\Psi}_{\ell}}_n[x_n].
+\end{equation}
+Далее символ $G^{\ell}_i[x_i](\alpha^{\ell}_{i - 1}, \alpha^{\ell}_i)$ будет использоваться как сокращенное обозначение для $G^{\mathbf{\Psi}_{\ell}}_i[x_i](\alpha^{\mathbf{\Psi}_{\ell}}_{i - 1}, \alpha^{\mathbf{\Psi}_{\ell}}_i)$.
+
+По определению, нормировочная константа~$Z$ вычисляется как сумма значений ненормированного распределения на всех конфигурациях:
+\begin{equation*}
+Z = \sum_{\vec{x}} \prod_{\ell = 1}^{m} \underbrace{\mathbf{\Psi}_{\ell}(\vec{x})}_{\text{$\in \mathbb{R}$}}
+= \!\!\sum_{x_1, \dots, x_n} \bigotimes_{\ell = 1}^{m} \left (G^{\ell}_1[x_1] \dotsm G^{\ell}_n[x_n]  \right).
+\end{equation*}
+Второе равенство выполнено, т.~к. кронекерово произведение чисел (матриц размера $1 \times 1$) эквивалентно обычному произведению.
+
+
+Пользуясь свойством смешанного произведения $AC \otimes BD = (A\otimes B)(C \otimes D)$, преобразуем выражение для~$Z$:
+\begin{equation*}
+Z =
+\sum_{x_1, \dots, x_n} \left ( G^1_1[x_1] \otimes \dotsb \otimes G^m_1[x_1] \right ) \dotsm
+\left ( G^1_n[x_n] \otimes \dotsb \otimes G^m_n[x_n] \right ).
+\end{equation*}
+
+Обозначим кронекерово произведение матриц~$G^\ell_i[x_i]$ через~$A_i[x_i]$:
+\begin{equation*}
+A_i[x_i] = G^1_i[x_i] \otimes \dotsb \otimes G^m_i[x_i].
+\end{equation*}
+
+Для любого значения~$x_i$ матрица~$A_i[x_i]$ имеет размеры $(\rank_{i - 1}(\mathbf{\Psi}_1)  \dotsm  \rank_{i - 1}(\mathbf{\Psi}_m)) \times (\rank_{i}(\mathbf{\Psi}_1)  \dotsm  \rank_{i}(\mathbf{\Psi}_m))$. Значение её элементов выражается через элементы матриц~$G_i^{\ell}[x_i]$:
+\begin{multline*}
+A_i[x_i](\alpha^1_{i - 1}, \dots, \alpha^m_{i - 1}; \alpha^1_i, \dots, \alpha^m_i) = G^1_i[x_i](\alpha^1_{i - 1}, \alpha^1_i)  \dotsm  G^m_i[x_i](\alpha^m_{i - 1}, \alpha^m_i).
+\end{multline*}
+
+Таким образом, матрица~$A_i[x_i]$ представлена в TT\hyp{}формате, а её TT\hyp{}ранг равен одному (т.~к. $G^{\ell}_i[x_i](\alpha^{\ell}_{i - 1}, \alpha^{\ell}_i)$ --- это матрица размера $1 \times 1$).
+
+Представим нормировочную константу~$Z$ в виде произведения $n$~матриц:
+\begin{multline*}
+Z = \sum_{x_1, \dots, x_n}  A_1[x_1] \ldots  A_n[x_n]
+= \left ( \sum_{x_1} A_1[x_1] \right ) \ldots  \left ( \sum_{x_n} A_n[x_n] \right ) = B_1 \dotsm  B_n,
+\end{multline*}
+где
+\begin{equation*}
+B_i = \sum_{x_i = 1}^{d_i} A_i[x_i].
+\end{equation*}
+
+TT\hyp{}преставление матрицы~$B_i$ можно получить просуммировав $d_i$ матриц в TT\hyp{}формате. Все матрицы~$B_i$ можно построить и держать в оперативной памяти, т.~к. TT\hyp{}ранги~$B_i$ не превосходят~$d_i$.
+
+\begin{algorithm}[tb]
+   \caption{Подсчет нормировочной константы~$Z$}
+   \label{alg:Z-computing}
+\begin{algorithmic}[1]
+   \REQUIRE факторы $\mathbf{\Psi}_1, \dots, \mathbf{\Psi}_m$, точность округления $\varepsilon$
+   \ENSURE оценка нормировочной константы $\widehat{Z}$
+   \FOR{$\ell := 1$ \TO $m$}
+   \STATE Найти TT\hyp{}ядра $G^{\ell}_1, \dots, G^{\ell}_n$ для тензора $\mathbf{\Psi}_{\ell}$
+   \ENDFOR
+   \STATE Инициализировать $\vec{f}_{n + 1} := 1$
+   \FOR{$i := n$ \TO $1$}
+     \STATE Инициализировать $B_i := 0$
+     \FOR{$x_i := 1$ \TO $d_i$}
+       \STATE Построить TT\hyp{}матрицу $A_i[x_i] = \bigotimes_{\ell = 1}^m G^\ell_i[x_i]$
+       \STATE $B_i := B_i + A_i[x_i]$
+     \ENDFOR
+     \STATE $\overline{\vec{f}_i} := B_i \cdot \vec{f}_{i + 1}$
+     \STATE $\vec{f}_i := \round(\overline{\vec{f}_i}, \varepsilon)$
+   \ENDFOR
+   \STATE $\widehat{Z} := \vec{f}_1$
+\end{algorithmic}
+\end{algorithm}
+
+Матрицы $B_1$ и $B_n$ являются вектором-строкой и вектором-столбцом соответственно, а значит результат произведения $B_1 \ldots B_n$~--- это число.
+Построив TT\hyp{}матрицы~$B_i$, их можно перемножать, округляя результат после каждого умножения~(см. алгоритм~\ref{alg:Z-computing}). Параметр~$\varepsilon$ контролирует баланс между точностью и скоростью работы алгоритма.
+
+Помимо нормировочной константы~$Z$, предложенный метод также позволяет найти маргинальные распределения на переменные графической модели. Ненормированное маргинальное распределение~$\hat{p}_i(x_i)$ вычисляется следующим образом:
+$
+\hat{p}_i(x_i) = B_1\ldots B_{i-1} A_i[x_i] B_{i+1}\ldots B_{n}.
+$
+При этом произведения~$B_1\ldots B_{i-1}$ и $B_{i+1}\ldots B_{n}$, $i=1,\ldots,n$ можно предрассчитать за $2 (n - 1)$ умножений TT\hyp{}матриц. Дополнительно рассчитав все произведения вида $B_i\ldots B_j$, $1 \leq i < j \leq n$, можно вычислять маргинальное распределение на любое подмножество переменных.
+
+\subsubsection{Теоретический анализ алгоритма~\ref{alg:Z-computing}}
+В этом разделе предоставлены теоретические гарантии точности оценки нормировочной константы алгоритмом~\ref{alg:Z-computing}.
+
+Обозначим оценку произведения TT\hyp{}матриц~$\{B_j\}_{j = i}^n$ за~$\vec{f}_i$, $\vec{f}_n = B_n$, $\widehat{Z} = \vec{f}_1$. Умножая TT\hyp{}матрицу на TT\hyp{}вектор и применяя TT\hyp{}округление, получаем~$\vec{f}_i$
+$$
+\vec{f}_i = \round(B_i \vec{f}_{i + 1}, \varepsilon),
+$$
+где точность TT\hyp{}округления контролирует относительную точность по евклидовой норме\footnote{Алгоритм TT\hyp{}округления контролирует относительную точность тензоров по норме Фробениуса, но для векторов норма Фробениуса совпадает с $L_2$-нормой.}:
+\begin{equation}
+\label{main-algorithm-rounding-inequality}
+\left \| B_i \vec{f}_{i + 1} - \vec{f}_i \right \|_2 \leq \varepsilon \left \| B_i \vec{f}_{i + 1} \right \|_2.
+\end{equation}
+
+Основной результат представлен в теореме~\ref{main-theorem}, затем приведено следствие, которое легче интерпретировать.
+\begin{theorem}
+\label{main-theorem}
+	Для любого набора факторов~$\mathbf{\Psi}_1, \ldots, \mathbf{\Psi}_m$ и любого значения параметра точности округления~$\varepsilon \geq 0$ абсолютная ошибка оценки нормировочной константы, посчитанной алгоритмом~\ref{alg:Z-computing}, не превосходит:
+	\begin{equation}
+	\begin{aligned}
+	\label{tough-abs-err-bound}
+	&\left |Z - \widehat{Z}  \right | \leq
+	\left \| B_1 \right \|_2 \dotsm \left \| B_{n-2} \right \|_2 \cdot \left \| B_{n-1} \vec{f}_n - \vec{f}_{n-1} \right \|_2 + \\
+	&+\left \| B_1 \right \|_2 \dotsm \left \| B_{n-3} \right \|_2 \cdot \left \| B_{n-2} \vec{f}_{n-1} - \vec{f}_{n-2} \right \|_2 + \dotsb + \\
+	&+\left \| B_1 \vec{f}_2 - \vec{f}_1 \right \|_2
+	\end{aligned}
+	\end{equation}
+\end{theorem}
+
+\begin{corollary}
+\label{main-theorem-corollary}
+	Для любого набора факторов~$\mathbf{\Psi}_1, \ldots, \mathbf{\Psi}_m$ и любого значения параметра точности округления~$\varepsilon \geq 0$ абсолютная ошибка оценки нормировочной константы, посчитанной алгоритмом~\ref{alg:Z-computing}, не превосходит:
+	\begin{equation}
+		\label{epsilon-inequality}
+		\left |Z - \widehat{Z}\right |  \leq \left \| B_1 \right \|_2 \dotsm \left \| B_n \right \|_2 ((1 + \varepsilon)^{n-1} - 1)
+	\end{equation}
+\end{corollary}
+Оценка из следствия менее точная, но позволяет по требуемой итоговой точности выбрать достаточный~$\varepsilon$.
+
+Чтобы воспользоваться результатами теоремы~\ref{main-theorem}, необходимо вычислять 2-норму векторов и матриц в TT\hyp{}формате. 2-норма вектора совпадает с нормой Фробениуса соответствующего тензора, поэтому значения~$\left \| B_i \vec{f}_{i + 1} - \vec{f}_i \right \|_2$ легко вычисляются. Хотя подсчет 2-нормы матриц в TT\hyp{}формате является вычислительно сложной задачей, 2-норму можно оценить сверху с помощью нормы Фробениуса или с помощью эмпирически более точной оценки, использующей структуру матрицы~$B_i$:
+\begin{equation}
+\label{eq:l2computing}
+\begin{aligned}
+\left \| B_i \right \|_2 &= \left \| \sum_{x_i} G_i^1 [x_i] \otimes \dotsb \otimes G_i^m [x_i] \right \|_2 \leq
+ \sum_{x_i} \left \| G_i^1 [x_i] \otimes \dotsb \otimes G_i^m [x_i] \right \|_2 =\\
+& = \sum_{x_i} \left \| G_i^1 [x_i] \right \|_2 \dotsm \left \| G_i^m [x_i] \right \|_2=U_i.
+\end{aligned}
+\end{equation}
+Здесь используется равенство: $\left \| A \otimes B \right \|_2 = \left \| A \right \|_2 \left \| B \right \|_2$.
+
+% \begin{figure}
+% \begin{center}
+% \begin{tabular}{m{0.3cm}@{}m{7cm}}
+% \begin{sideways}\parbox{4cm}{\centering\scriptsize   }\end{sideways}
+% & \includegraphics[width=7cm]{figures/2norm.pdf}
+% \\
+% & \parbox{5.3cm}{\centering\scriptsize номер переменной~$i=1,\ldots,n$ } \\
+% \end{tabular}
+% \end{center}
+% \caption{ Сравнение Фробениусовой и спектральной нормы матрицы~$B_i$ с верхней оценкой~$U_i$. График построен для модели Изинга с решеткой размера $10 \times 10$, в которой коэффициенты унарных и парных потенциалов сгенерированы из равномерного распределения на $[-1, 1]$, а температура равна~$1$.
+% % A comparison plot of the Frobenius and spectral norms of matrix~$B_i$ and the upper bound~$U_i$.
+% % The plot was constructed for Ising model of size~$10$ with unary weights and pairwise weights generated uniformly from~$[-1, 1]$ with the temperature set to~$1$.
+% \label{fig:zUpperBound}}
+% \end{figure}
+% На рис.~\ref{fig:zUpperBound} представлены результаты сравнения величины нормы Фробениуса~$\|B_i\|_F$, спектральной нормы~$\|B_i\|_2$ и её верхней оценки~$U_i$. Значения разных норм указаны для всех индексов~$i = 1, \ldots, n$ фиксированной модели Изинга.
+
+
+
+% \begin{figure}
+% \begin{center}
+% \begin{tabular}{m{0.3cm}@{}m{7cm}}
+% \begin{sideways}\parbox{4cm}{\centering\scriptsize  $\log Z$ }\end{sideways}
+% & \includegraphics[width=7cm]{figures/10x10,J=1,average=10,confInt_v3.pdf}
+% \\
+% & \parbox{7.3cm}{\centering\scriptsize температура~$T$} \\
+% \end{tabular}
+% \end{center}
+% \caption{Доверительный интервал на значение нормировочной константы~$Z$, полученный из теоремы~\ref{main-theorem} и неравенства~\eqref{eq:l2computing}. Детали см. в разделе \ref{sec::expZ}.  \label{fig:zConf}}
+% \end{figure}
+
+
+\subsubsection{Доказательство теоремы~\ref{sec:mrf-theorem-proof}}
+
+\begin{lemma}
+\label{app:proof-of-theorem-2:lemma}
+В условиях теоремы~\ref{main-theorem} для всех индексов $i = 1, \ldots, n - 1$ верно следующее неравенство:
+\begin{equation}
+\begin{aligned}
+\label{app:proof-of-theorem-2:lemma:inequality}
+&\left\| B_i \ldots B_n - \vec{f}_i \right\|_2 \leq
+\left\| B_i \right\|_2 \ldots \left\| B_{n - 2} \right\|_2 \cdot \left\| B_{n - 1}\vec{f}_n - \vec{f}_{n - 1}\right\|_2 + \\
+ &+ {} \left\| B_i \right\|_2 \ldots \left\| B_{n - 3} \right\|_2 \cdot \left\| B_{n - 2}\vec{f}_{n - 1} - \vec{f}_{n - 2} \right\|_2 +
+{} \ldots + \left\| B_i\vec{f}_{i + 1} - \vec{f}_i \right\|_2.
+\end{aligned}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Проведем доказательство по индукции.
+
+В качестве базы индукции рассмотрим $i = n - 1$:
+\begin{equation*}
+\left\| B_{n - 1}B_n - \vec{f}_{n - 1} \right\|_2 = \left\| B_{n - 1}\vec{f}_n - \vec{f}_{n - 1} \right\|_2.
+\end{equation*}
+(т.~к. $\vec{f}_n = B_n$ по построению.)
+
+Предположим теперь, что~(\ref{app:proof-of-theorem-2:lemma:inequality}) верно $\forall i = j + 1, \ldots, n - 1$. Тогда для $i = j$ получаем
+\begin{align*}
+&\left\| B_j \ldots B_n - \vec{f}_j \right\|_2 = \\
+& = \left\| (B_j \ldots B_n - B_j\vec{f}_{j + 1}) + (B_j\vec{f}_{j + 1} - \vec{f}_j) \right\|_2 \leq \\
+& \leq \left\| B_j \right\|_2 \left\| B_{j + 1} \ldots B_n - \vec{f}_{j + 1} \right\|_2 + \left\| B_j\vec{f}_{j + 1} - \vec{f}_j \right\|_2 \leq \\
+&\leq \left\| B_j \right\|_2 (
+\left\| B_{j + 1} \right\|_2 \ldots \left\| B_{n - 2} \right\|_2 \cdot \left\| B_{n - 1}\vec{f}_n - \vec{f}_{n - 1}\right\|_2 + \\
+& + \left\| B_{j + 1} \right\|_2 \ldots \left\| B_{n - 3} \right\|_2 \cdot \left\| B_{n - 2}\vec{f}_{n - 1} - \vec{f}_{n - 2} \right\|_2 +  \\
+& + \ldots + \left\| B_{j + 1}\vec{f}_{j + 2} - \vec{f}_{j + 1} \right\|_2
+) + \left\| B_j\vec{f}_{j + 1} - \vec{f}_j \right\|_2.
+\end{align*}
+Таким образом, (\ref{app:proof-of-theorem-2:lemma:inequality}) верно для~$i = j$.
+\end{proof}
+
+\begin{proof}[Доказательство теоремы~\ref{main-theorem}]
+По построению, $Z = B_1 \ldots B_n$, а $\widehat{Z} = \vec{f}_1$. Таким образом, выполнены равенства
+\begin{equation*}
+\label{app:proof-of-theorem-2:difference-as-matrix-norm}
+|Z - \widehat{Z}| = |B_1 \ldots B_n - \vec{f}_1| = \left\| B_1 \ldots B_n - \vec{f}_1 \right\|_2.
+\end{equation*}
+Здесь используется тот факт, что $B_1 \ldots B_n$ и $\vec{f}_1$ --- числа, а для чисел модуль совпадает с $L_2$-нормой одноэлементного вектора. Для завершения доказательства осталось применить лемму~\ref{app:proof-of-theorem-2:lemma} к полученному выражению.
+\end{proof}
+
+\subsection{Доказательство следствия~\ref{main-theorem-corollary}}
+
+\begin{lemma}
+\label{app:proof-of-corollary-of-theorem-2:lemma-for-f}
+В условиях следствия~\ref{main-theorem-corollary} для всех индексов $i = 1, \ldots, n$ верно следующее неравенство:
+\begin{equation}
+\label{app:proof-of-corollary-of-theorem-2:lemma-for-f:inequality}
+\left\| \vec{f}_i \right\|_2 \leq \left\| B_i \right\|_2 \ldots \left\| B_n \right\|_2 (1 + \varepsilon)^{n - i}.
+\end{equation}
+\end{lemma}
+\begin{proof}
+Проведем доказательство по индукции.
+
+Для $i = n$ утверждение следует из определения~$\vec{f}_n$.
+
+Пусть~(\ref{app:proof-of-corollary-of-theorem-2:lemma-for-f:inequality}) верно $\forall j = i + 1, \ldots, n$. Тогда из~(\ref{main-algorithm-rounding-inequality}) следует, что
+\begin{align*}
+\left\| \vec{f}_j \right\|_2 = &\left\| \vec{f}_j - B_j\vec{f}_{j + 1} + B_j\vec{f}_{j + 1} \right\|_2 \leq \\
+\leq & ~ \varepsilon \left\| B_j \right\|_2 \left\| \vec{f}_{j + 1} \right \|_2 + \left\| B_j \right\|_2 \left\| \vec{f}_{j + 1} \right \|_2 = \\
+ = &\left\| B_j \right\|_2 \left\| \vec{f}_{j + 1} \right \|_2 (1 + \varepsilon).
+\end{align*}
+Чтобы завершить доказательство, остаётся воспользоваться предположением индукции для~$\left\| \vec{f}_{j + 1} \right \|_2$.
+\end{proof}
+
+\begin{lemma}
+\label{app:proof-of-corollary-of-theorem-2:lemma-for-difference}
+В условиях следствия~\ref{main-theorem-corollary} для всех индексов $i = 1, \ldots, n - 1$ верно следующее неравенство:
+\begin{equation}
+\label{app:proof-of-corollary-of-theorem-2:lemma-for-difference:inequality}
+\left\| B_i \vec{f}_{i + 1} - \vec{f}_i \right\|_2 \leq \left\| B_i \right\|_2 \ldots \left\| B_n \right\|_2 \varepsilon (1 + \varepsilon)^{n - i - 1}.
+\end{equation}
+\end{lemma}
+\begin{proof}
+Утверждение следует из леммы~\ref{app:proof-of-corollary-of-theorem-2:lemma-for-f} и неравенства
+\begin{equation*}
+\left\| B_i \vec{f}_{i + 1} - \vec{f}_i \right\|_2 \leq \varepsilon \left\| B_i \vec{f}_{i + 1} \right\|_2 \leq \varepsilon \left\| B_i \right\|_2 \left\| \vec{f}_{i + 1} \right\|_2,
+\end{equation*}
+которое в свою очередь следует из~(\ref{main-algorithm-rounding-inequality}).
+\end{proof}
+
+
+\begin{proof}[Доказательство следствия~\ref{main-theorem-corollary}]
+Применяя лемму~\ref{app:proof-of-corollary-of-theorem-2:lemma-for-difference} к неравенству~(\ref{tough-abs-err-bound}), получаем
+\begin{align*}
+&|Z - \widehat{Z}| \leq \left\| B_1 \right\|_2 \ldots \left\| B_n \right\|_2 \varepsilon +
+\left\| B_1 \right\|_2 \ldots \left\| B_n \right\|_2 \varepsilon (1 + \varepsilon) + \ldots + \\
+&+ \left\| B_1 \right\|_2 \ldots \left\| B_n \right\|_2 \varepsilon (1 + \varepsilon)^{n - 2} =
+\left\| B_1 \right\|_2 \ldots \left\| B_n \right\|_2 \varepsilon (1 + (1 + \varepsilon) + \ldots + (1 + \varepsilon)^{n - 2}).
+\end{align*}
+Пользуясь формулой суммы геометрической прогрессии $1 + (1 + \varepsilon) + \ldots + (1 + \varepsilon)^{n - 2} = ((1 + \varepsilon)^{n - 1} - 1) / \varepsilon$, получаем~(\ref{epsilon-inequality}).
+\end{proof}
