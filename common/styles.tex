@@ -1,0 +1,138 @@
+%%% Кодировки и шрифты %%%
+\ifxetexorluatex
+    \setmainlanguage[babelshorthands=true]{russian}  % Язык по-умолчанию русский с поддержкой приятных команд пакета babel
+    \setotherlanguage{english}                       % Дополнительный язык = английский (в американской вариации по-умолчанию)
+    \setmonofont{Courier New}
+    \newfontfamily\cyrillicfonttt{Courier New}
+    \ifXeTeX
+        \defaultfontfeatures{Ligatures=TeX,Mapping=tex-text}
+    \else
+        \defaultfontfeatures{Ligatures=TeX}
+    \fi
+    \setmainfont{Times New Roman}
+    \newfontfamily\cyrillicfont{Times New Roman}
+    \setsansfont{Arial}
+    \newfontfamily\cyrillicfontsf{Arial}
+\else
+    \IfFileExists{pscyr.sty}{\renewcommand{\rmdefault}{ftm}}{}
+\fi
+
+%%% Подписи %%%
+\captionsetup{%
+singlelinecheck=off,                % Многострочные подписи, например у таблиц
+skip=2pt,                           % Вертикальная отбивка между подписью и содержимым рисунка или таблицы определяется ключом
+justification=centering,            % Центрирование подписей, заданных командой \caption
+}
+
+%%% Рисунки %%%
+\DeclareCaptionLabelSeparator*{emdash}{~--- }             % (ГОСТ 2.105, 4.3.1)
+\captionsetup[figure]{labelsep=\figlabelsep,position=bottom}
+
+%%% Таблицы %%%
+\ifnumequal{\value{tabcap}}{0}{%
+    \newcommand{\tabcapalign}{\raggedright}  % по левому краю страницы или аналога parbox
+
+    \DeclareCaptionFormat{tablecaption}{\tabcapalign #1#2#3}
+    \captionsetup[table]{labelsep=emdash}        % тире как разделитель идентификатора с номером от наименования
+}{%
+    \ifnumequal{\value{tablaba}}{0}{%
+        \newcommand{\tabcapalign}{\raggedright}  % по левому краю страницы или аналога parbox
+    }{}
+
+    \ifnumequal{\value{tablaba}}{1}{%
+        \newcommand{\tabcapalign}{\centering}    % по центру страницы или аналога parbox
+    }{}
+
+    \ifnumequal{\value{tablaba}}{2}{%
+        \newcommand{\tabcapalign}{\raggedleft}   % по правому краю страницы или аналога parbox
+    }{}
+
+    \ifnumequal{\value{tabtita}}{0}{%
+        \newcommand{\tabtitalign}{\raggedright}  % по левому краю страницы или аналога parbox
+    }{}
+
+    \ifnumequal{\value{tabtita}}{1}{%
+        \newcommand{\tabtitalign}{\centering}    % по центру страницы или аналога parbox
+    }{}
+
+    \ifnumequal{\value{tabtita}}{2}{%
+        \newcommand{\tabtitalign}{\raggedleft}   % по правому краю страницы или аналога parbox
+    }{}
+
+    \DeclareCaptionFormat{tablecaption}{\tabcapalign #1#2\par%  % Идентификатор таблицы на отдельной строке
+        \tabtitalign{#3}}                                       % Наименование таблицы строкой ниже
+    \captionsetup[table]{labelsep=\tablabelsep}                 % разделитель идентификатора с номером от наименования
+}
+\DeclareCaptionFormat{tablenocaption}{\tabcapalign #1\strut}    % Наименование таблицы отсутствует
+
+\captionsetup[table]{format=tablecaption,singlelinecheck=off,position=top,skip=0pt}  % многострочные наименования и прочее
+\DeclareCaptionLabelFormat{continued}{Продолжение таблицы~#2}
+
+%%% Подписи подрисунков %%%
+\renewcommand{\thesubfigure}{\asbuk{subfigure}}           % Буквенные номера подрисунков
+\captionsetup[subfigure]{font={normalsize},               % Шрифт подписи названий подрисунков (не отличается от основного)
+    labelformat=brace,                                    % Формат обозначения подрисунка
+    justification=centering,                              % Выключка подписей (форматирование), один из вариантов            
+}
+%\DeclareCaptionFont{font12pt}{\fontsize{12pt}{13pt}\selectfont} % объявляем шрифт 12pt для использования в подписях, тут же надо интерлиньяж объявлять, если не наследуется
+%\captionsetup[subfigure]{font={font12pt}}                 % Шрифт подписи названий подрисунков (всегда 12pt)
+
+%%% Настройки гиперссылок %%%
+\ifLuaTeX
+    \hypersetup{
+        unicode,                % Unicode encoded PDF strings
+    }
+\fi
+
+\hypersetup{
+    linktocpage=true,           % ссылки с номера страницы в оглавлении, списке таблиц и списке рисунков
+%    linktoc=all,                % both the section and page part are links
+%    pdfpagelabels=false,        % set PDF page labels (true|false)
+    plainpages=false,           % Forces page anchors to be named by the Arabic form  of the page number, rather than the formatted form
+    colorlinks,                 % ссылки отображаются раскрашенным текстом, а не раскрашенным прямоугольником, вокруг текста
+    linkcolor={linkcolor},      % цвет ссылок типа ref, eqref и подобных
+    citecolor={citecolor},      % цвет ссылок-цитат
+    urlcolor={urlcolor},        % цвет гиперссылок
+%    hidelinks,                  % Hide links (removing color and border)
+    pdftitle={\thesisTitle},    % Заголовок
+    pdfauthor={\thesisAuthor},  % Автор
+    pdfsubject={\thesisSpecialtyNumber\ \thesisSpecialtyTitle},      % Тема
+%    pdfcreator={Создатель},     % Создатель, Приложение
+%    pdfproducer={Производитель},% Производитель, Производитель PDF
+    pdfkeywords={\keywords},    % Ключевые слова
+    pdflang={ru},
+}
+\ifnumequal{\value{draft}}{1}{% Черновик
+    \hypersetup{
+        draft,
+    }
+}{}
+
+%%% Шаблон %%%
+\DeclareRobustCommand{\todo}{\textcolor{red}}       % решаем проблему превращения названия цвета в результате \MakeUppercase, http://tex.stackexchange.com/a/187930/79756 , \DeclareRobustCommand protects \todo from expanding inside \MakeUppercase
+\AtBeginDocument{%
+    \setlength{\parindent}{2.5em}                   % Абзацный отступ. Должен быть одинаковым по всему тексту и равен пяти знакам (ГОСТ Р 7.0.11-2011, 5.3.7).
+}
+
+%%% Списки %%%
+% Используем короткое тире (endash) для ненумерованных списков (ГОСТ 2.105-95, пункт 4.1.7, требует дефиса, но так лучше смотрится)
+\renewcommand{\labelitemi}{\normalfont\bfseries{--}}
+
+% Перечисление строчными буквами латинского алфавита (ГОСТ 2.105-95, 4.1.7)
+%\renewcommand{\theenumi}{\alph{enumi}}
+%\renewcommand{\labelenumi}{\theenumi)} 
+
+% Перечисление строчными буквами русского алфавита (ГОСТ 2.105-95, 4.1.7)
+\makeatletter
+\AddEnumerateCounter{\asbuk}{\russian@alph}{щ}      % Управляем списками/перечислениями через пакет enumitem, а он 'не знает' про asbuk, потому 'учим' его
+\makeatother
+%\renewcommand{\theenumi}{\asbuk{enumi}} %первый уровень нумерации
+%\renewcommand{\labelenumi}{\theenumi)} %первый уровень нумерации 
+\renewcommand{\theenumii}{\asbuk{enumii}} %второй уровень нумерации
+\renewcommand{\labelenumii}{\theenumii)} %второй уровень нумерации 
+\renewcommand{\theenumiii}{\arabic{enumiii}} %третий уровень нумерации
+\renewcommand{\labelenumiii}{\theenumiii)} %третий уровень нумерации 
+
+\setlist{nosep,%                                    % Единый стиль для всех списков (пакет enumitem), без дополнительных интервалов.
+    labelindent=\parindent,leftmargin=*%            % Каждый пункт, подпункт и перечисление записывают с абзацного отступа (ГОСТ 2.105-95, 4.1.8)
+}

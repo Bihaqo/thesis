@@ -1,84 +1,15 @@
-\documentclass{article} % For LaTeX2e
-\usepackage{hyperref}
-\usepackage{url}
-\usepackage[russian]{babel}
-\usepackage[utf8]{inputenc}
+% \cite[с.~54]{Sokolov}
+\chapter{Основные понятия} \label{chap:definitions}
 
-\usepackage{xcolor}
+\section{Разложение в тензорный поезд} \label{sec:tt-decomposition}
 
-% use Times
-\usepackage{times}
-% For figures
-\usepackage{graphicx} % more modern
-%\usepackage{epsfig} % less modern
-\usepackage{subfigure}
-% \usepackage{subfig}
-
-\usepackage{hyphenat}
-% For algorithms
-\usepackage{algorithm}
-\usepackage[noend]{algorithmic}
-
-\usepackage{amsmath}
-\usepackage{amsfonts}
-\usepackage{amsthm}
-\usepackage{amssymb}
-\usepackage{fixmath}
-\usepackage{mathtools}
-
-\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
-\DeclareMathOperator{\rank}{r}
-\DeclareMathOperator{\const}{const}
-\DeclareMathOperator{\sumall}{sum}
-\DeclareMathOperator{\round}{round}
-\DeclareMathOperator{\ttrank}{TT-rank}
-\DeclareMathOperator{\ttround}{TT-round}
-\DeclareMathOperator{\grad}{grad}
-\renewcommand{\vec}[1]{\boldsymbol{#1}}
-\newcommand{\tens}[1]{\boldsymbol{\mathcal{#1}}}
-\newcommand{\tensel}[1]{\mathcal{#1}}
-\newcommand{\alert}[1]{\textbf{#1}}
-
-
-\graphicspath{{figures/}}
-\newcommand{\executeiffilenewer}[3]{%
-  \ifnum\pdfstrcmp{\pdffilemoddate{#1}}%
-  {\pdffilemoddate{#2}} > 0 {\immediate\write18{#3}}\fi}
-\newcommand{\includesvg}[1]{%
-  \executeiffilenewer{#1.svg}{#1.pdf}%
-  {inkscape -z -D --file=#1.svg %
-   --export-pdf=#1.pdf --export-latex}%
-  \input{#1.pdf_tex}%
-}
-
-
-\title{Тензорные методы в машинном обучении}
-
-
-\author{Александр Новиков}
-
-\begin{document}
-
-\maketitle
-
-\section{Введение}
-\section{Тензорные методы в машинном обучении}
-\section{Разложение в Тензорный Поезд}
-
-\section{TT\hyp{}разложение}
-\label{sec:TT-description}
-
-\begin{figure}[t]
-  % \vskip 0.2in
+\begin{figure}[ht]
   \begin{center}
-	% \resizebox{0.4\textwidth}{!}{
-    \def\svgwidth{7cm}
+    \def\svgwidth{10cm}
     \normalsize
-    \includesvg{figures/TT}
-    % }
+    \includesvg{images/TT}
     \caption{Иллюстрация разложения в Тензорный Поезд для тензора $\tens{A}$ размера $3 \times 4 \times 4 \times 3$ все ТТ-ранги которого равны $3$. \label{fig:TT}}
     \end{center}
-    % \vskip -0.2in
 \end{figure}
 
 Будем говорить, что $n$-мерный тензор~$\mathbf{A}$ представлен в TT\hyp{}формате, если для всех размерностей~$i=1,\ldots,n$ и всех значений индексов по этой размерности~$x_i = 1, \ldots, d_i$ ($d = \max_{i=1,\ldots,n} d_i$) существуют матрицы~$G_i^{\mathbf{A}}[x_i]$, такие, что каждый элемент тензора~$\mathbf{A}$ представим в виде произведения матриц (см Рис.~\ref{fig:TT}):
@@ -112,7 +43,7 @@
 \vskip 0.05in
 \begin{center}
 \begin{small}
-\begin{sc}
+% \begin{sc}
 \begin{tabular}{l@{\;\;}l@{\;\;}l}
 \hline
 Операция & Ранг результата & Вычислительная сложность \\
@@ -130,7 +61,7 @@ $\left \| \mathbf{A} \right \|_F$       & --                      & $O(n  d  \ra
 $\mathbf{C} = \round(\mathbf{A}, \varepsilon)$ & $\rank(\mathbf{C}) \leq \rank(\mathbf{A})$          & $O(n d \rank^3(\mathbf{A}))$\\
 \hline
 \end{tabular}
-\end{sc}
+% \end{sc}
 \end{small}
 \end{center}
 \vskip -0.1in
@@ -160,28 +91,4 @@ $\mathbf{C} = \round(\mathbf{A}, \varepsilon)$ & $\rank(\mathbf{C}) \leq \rank(\
 
 Наличие специального определения TT\hyp{}формата для векторов и матриц позволяет применять операции линейной алгебры к задачам большого размера. Например, для поиска минимального элемента тензора можно вытянуть его в диагональную матрицу и применить приближенный метод поиска минимальных собственных значений основанный на алгоритме DMRG~\cite{khoromskij2010dmrg}.
 
-\section{Вывод МРФ}
-\subsection{МРФ}
-\subsection{Задача вывода}
-\subsection{Обзор основных подходов}
-\subsection{Тензорный подход}
-\section{Сжатие нейросетевых моделей}
-\subsection{Нейросети}
-\subsection{Основные методы сжатия}
-\subsection{Тензорный подход к сжатию}
-\section{Ядерный метод на основе ТТ}
-\subsection{Полиномиальные методы в машинном обучении}
-\subsection{Основные подходы к обучению полиномиальных моделей}
-\subsection{Тензорный подход к полиномиальным моделям}
-\subsection{Риманова оптимизация}
-\section{Комплексы программ}
-\subsection{Библиотека тензорных вычислений t3f}
-\subsection{Реализация алгоритма вывода в МРФ}
-\subsection{Реализация алгоритма сжатия нейросетей}
-\subsection{Реализация тензорных полиномиальных моделей}
-\section{Результаты численных экспериментов}
-\section{Заключение}
-\section{Список литературы}
-\section{Публикации автора по теме диссертации}
-
-\end{document}
+\section{Машинное обучение} \label{sec:ml}
