@@ -1,5 +1,79 @@
 \chapter{Комплексы программ} \label{chap:exm}
 \section{Библиотека тензорных вычислений t3f} \label{sec:t3f}
+Для выполнения численных рассчетов с использованием разложения в Тензорный Поезд, автором был разработан программный пакет на языке Python. Главные отличия от уже существующих реализаций разложения в Тензорный Поезд[CITE] составляют:
+\begin{enumerate}
+	\item Поддержка работы на графических ускорителях (GPU) для всех операций. Пакет автоматически проверяет доступно ли на данной машине устройство GPU и если доступно, переносит рассчеты на графический ускоритель.
+	\item Расширенная поддержка Римановой оптимизации. Единственный альтернативный пакет в котором есть поддержка Римановой оптимизации это TTPY, в котором есть только операция проекции на касательное пространство (которая была реализована в этом пакете автором данной диссертации). В пакете T3F доступно множество частных случаев требующихся для реализации численных методов Римановой оптимизации, которые формально могут быть реализованы с помощью комбинации оператора проекции и базовых операций таких как матрично-векторное умножение, но при реализации этих частных случаев в отдельной функции позволяют значительно ускорить вычисления. Примерами таких операций являются проекция матрично-вектороного произведения на касательную плоскость ТТ-вектора $P_b(A c)$ и вычисления матрицы Грама проекций на касательную плоскость $G_{ij} = <P_b(x_i), P_b(x_j)>$.
+	\item Поддержка работа с множеством (батчем) ТТ-объектов одновременно, реализованная с помощью векторизованных операций. Например подсчет матрицы Грама набора ТТ-объектов можно выполнить одной параллельной операцией.
+	\item Поддержка автоматического дифференцирования произвольной функции ошибки $L(\cdot)$ являющейся функцией от тензора в ТТ-формате.
+	\item Документация и тесты (покрытие тестами составляет 92\%).
+\end{enumerate}
+
+\subsection{Интерфейс программного кода}
+В листинге~\ref{list:t3f-example} приведен пример простой программы, которая выполняет факторизацию двух данных тензоров в формат тензорного поезда, складывает полученные ТТ-объекты, и округляет результат.
+\begin{ListingEnv}[!h]% настройки floating аналогичны окружению figure
+%    \captionsetup{format=tablenocaption}% должен стоять до самого caption
+    \caption{Представление тензоров в формат Тензорного Поезда а так же другие операции с помощью библиотеки T3F.}
+    % далее метка для ссылки:
+    \label{list:t3f-example}
+    % окружение учитывает пробелы и табуляции и применяет их в сответсвии с настройками
+    \begin{lstlisting}[language={Python}]
+# Import the main package.
+import t3f
+# Import a supplementary tool.
+import numpy as np
+
+# Generate random tensors of size 3 x 4 x 5.
+tens_1 = np.random.randn(3, 4, 5)
+tens_2 = np.random.randn(3, 4, 5)
+
+# Convert the tensors into the TT-format with TT-ranks 10 and 20.
+tt_1 = t3f.to_tt_tensor(tens_1, max_r=10)
+tt_2 = t3f.to_tt_tensor(tens_2, max_r=20)
+
+# Sum the TT-objects and round the result to have TT-rank 5.
+tt_res = t3f.round(tt_1 + tt_2, max_r=5)
+
+# Convert the result into a full (uncompressed) tensor.
+res = t3f.full(tt_res)
+    \end{lstlisting}
+\end{ListingEnv}%
+
+\subsection{Список поддерживаемых операций}
+Список поддерживаемых операций и их описание доступно в таблице~\ref{tbl:t3f-ops}.
+
+\fontsize{10pt}{10pt}\selectfont
+\begin{longtable*}[c]{lc} %longtable* появляется из пакета caption и даёт ненумерованную таблицу
+% \caption{Описание входных файлов модели}\label{Namelists} 
+%\\ 
+ \hline
+ %\multicolumn{4}{|c|}{\textbf{Файл puma\_namelist}}        \\ \hline
+ Функция & Описание               \\ \hline
+                                              \endfirsthead   \hline
+ \multicolumn{2}{|c|}{\small\slshape (продолжение)}        \\ \hline
+ Функция & Описание               \\ \hline
+                                              \endhead        \hline
+% \multicolumn{4}{|c|}{\small\slshape (окончание)}        \\ \hline
+% Параметр & Умолч. & Тип & Описание               \\ \hline
+%                                             \endlasthead        \hline
+ \multicolumn{2}{|r|}{\small\slshape продолжение следует}  \\ \hline
+                                              \endfoot        \hline
+                                              \endlastfoot
+to\_tt\_tensor(a) & Факторизует тензор а в формат Тензорного Поезда\\
+to\_tt\_matrix(a) & Факторизует матрицу а в матричный формат Тензорного Поезда\\
+[TODO]
+% \hline 
+\end{longtable*}
+
+\subsection{Быстродействие пакета}
+vs ttpy and cpu vs gpu
+
+
+\subsection{Использование библиотеки T3F в научных проектах}
+TT-GP, eigensolver?, ещё погуглить?
+
+
 \section{Реализация алгоритма вывода в МРФ} \label{sec:mrf-code}
 \section{Реализация алгоритма сжатия нейросетей} \label{sec:exm-code}
-\section{Реализация тензорных полиномиальных моделей} \label{sec:nn-code}
+Instead of compressing existing architectures one can use low-rank methods to be able to use much wider hidden layer than was available before. A recent work \cite{Jimmy2014lowRankSNN} shows that it is possible to construct wide and shallow neural networks with performance close to the state-of-the-art deep convolutional neural networks by training a shallow network on the outputs of a trained deep network. They report the improvement of performance with the increase of the hidden layer size and used up to $30\,000$ hidden neurons while restricting the matrix rank of the weight matrix in order to be able able to keep and to update it during the training. Restricting the TT-ranks of the weight matrix allows to use much wider layers that can potentially lead to greater expressive power of the model and we demonstrate it by outperforming other non-convolutional networks on the CIFAR-10 dataset by using several hundreds of thousands of hidden neurons.
+\section{??Реализация тензорных полиномиальных моделей} \label{sec:nn-code}
