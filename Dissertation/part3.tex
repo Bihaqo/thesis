@@ -1,4 +1,123 @@
-\chapter{Сжатие нейронных сетей} \label{chap:cnn}
-\section{Нейронные сети} \label{sec:cnn}
-\section{Обзор подходов к сжатию весов нейронных сетей} \label{sec:cnn-approaches}
-\section{Тензорный алгоритм сжатия} \label{sec:tt-cnn}
+\chapter{Тензорно-нейронные сети} \label{chap:tensornet}
+Исскуственные нейронные сети опережают другие подходы во многих задачах распознования образов, распознования речи, перевода, и т.п. [CITE TODO]
+Причиной успеха этого класса моделей является их большая гибкость и доступность большого количества вычислительных ресурсов (таких как кластеры графических ускорителей GPU).
+И, хотя исскуственные нейросети успешно применяются в промышлености (от машинного перевода, ...), их использования в мобильных и встроенных устройствах без доступа к интернету остается ограниченным.
+
+Причина этому -- высокие требования к доступной памяти, вычислительной мощности и использованию аккумулятора. Например, популярная на сегоднешний день модель VGG-16 потребляет [TODO].
+
+В связи с этим многие работы были посвящены задачам сжатия и ускорения нейронных сетей. Обратите внимание, что размер требуемой памяти является одним из ограничивающих факторов к снижению энергопотребления моделей. Так, при использовании 45 нм техпроцесса по технологии КМОП, требуется 0.9 пДж чтобы сложить два 32-битных числа с плавающей точкой, доступ к одному 32-битному числу в кэше SRAM требует 5 пДж, и доступ к 32-битному числу в оперативной памяти требует 640 пДж, что на три порядка больше по сравнению с операцией сложения. Большие нейросети не помещаются в кэш процессора и таким образом требует ресурсоемкого доступа к оперативной памяти.
+
+В данной главе представлен тензорный подход к сжатию и ускорению (а значит и снижению энергопотребления) нейронных сетей.
+
+\section{Обзор существущих подходов к сжатию нейронных сетей} \label{sec:tensornet-alternatives}
+В современных нейронных сетях до 99\% памяти занимают веса полносвязных слоев. В связи с этим, многие работы ставили своей целью исследование возможности сжатия полносвзянных слоев. Одним из первых рассмотренных подходов к сжатию стало ограничение ранга матрицы полносвязного слоя~\cite{Denil2013predicting}. Ограничение случайного подмножества элементов матрицы так, чтобы все элементы каждого подмножества имели одно и то же значение~\cite{chen2015compressing} позволило сжимать полносвязные слои в 8 раз без потери качества. Так же рассматривалась более общая постановка, в которой ограничивалось число возможных значений которые могут принимать различные элементы матрицы~\cite{gong2014PQcompressing}. Было показано, что использование 16-битный чисел с плавающей точкой вместо 64-битных  для хранения параметров нейросети возможно без потери качества классификации, что соответсвует сжатию сети в 4 раза~\cite{Gupta2015floatingPoint}.
+
+Метод предложенный в данной диссертации больше всего похож на низгоранговый подход~\cite{Denil2013predicting}, однако вместо ограничения матричного рангла мы рассматриваем матрицу слоя как многомерный линейный оператор и ограничиваем ее ТТ-ранг.
+
+
+
+\section{Тензорный алгоритм сжатия} \label{sec:tensornet-tt-cnn}
+В данном разделе описывается тензорный формат сжатия полносвязных слоев нейросети. Рассмотрим линейную часть функционального преобразования полносвязного слоя:
+\begin{equation}
+  \label{eq:tensornet-linear-layer}
+  y = \mat{W} x + \vec{b},
+\end{equation}
+где $\mat{W}$ -- это матрица весов, а $\vec{b}$ -- вектор сдвига.
+Рассмотрим как изменится преобразование~\ref{eq:tensornet-linear-layer} при использовани ТТ-формата для предстваления матрицы весов~$W$. Напомним, что ТТ-формат для матриц задается особым образом, заключающемся в построения вектор-индексов строк и столбцов ($i <-> (i_1, \ldots, i_d)$, $j <-> (j_1, \ldots, j_d)$) и построении ТТ-формата для тензора $\tens{W}$ получающегося путем перестановки и группировки индексов в исходной матрице (см.~\ref{??}).
+Для удобства обозначений, рассмотрим так же тензорную версию вектора сдвига $\vec{b}$: $\tensel{B}(i_1, \ldots, j_d) = \vec{b}_j$
+\begin{equation}
+% \begin{aligned}
+\label{eq:tensornet-layer-output-detailed}
+\tensel{Y}(i_1, \ldots, i_d) =
+%\sum_{\vec{j}} W (\vec{i}; \vec{j}) x_s(\vec{j}) + b(\vec{i}) = \\
+\sum_{j_1, \ldots, j_d}  \!\!\mat{G}_1[i_1, j_1] \dots \mat{G}_d[i_d, j_d]\, \tensel{X}(j_1,\ldots,j_d) + \tensel{B}(i_1,\ldots,i_d).
+% \end{aligned}
+\end{equation}
+
+Сложность вычисления выхода линейного слоя параметризованного матрицей в ТТ-формате~\eqref{eq:tensornet-layer-output-detailed} составляет $O(d r^2 m \max\{m, n\}^d) = O(d r^2 m \max\{M, N\})$~(см таблицу~\ref{tbl:complexity-comparison})
+
+
+
+\subsection{Обучение модели}
+В этом разделе мы выводим алгоритм подсчета градиентов произвольной функции потерь нейросети $L(w)$ по параметрам линейного слоя параметризованного матрицей заданной в ТТ-формате~\eqref{eq:tensornet-layer-output-detailed}. Параметры слоя -- это ядра ТТ-разложения $\tens{G}_1, \ldots, \tens{G}_d$ и тензор сдвига $\tens{B}$. Подсчет градиентов необходим для обучения нейросетей содержащих тензорно-параметризованные линейные слои.
+
+
+To learn the parameters of the TT-representation of $\mat{W}$ one can use equation~\eqref{eq:traditional-gradient} to compute the gradient of the loss function w.r.t. the weight matrix $\mat{W}$, convert the gradient matrix into the TT-format (with the TT-SVD algorithm~\cite{oseledets2011ttMain}) and then add this gradient (multiplied by a step size) to the current estimate of the weight matrix: $\mat{W}_{k+1} = \mat{W}_{k} + \gamma_k \frac{\partial L}{\partial \mat{W}}$. However direct computation of $\frac{\partial L}{\partial \mat{W}}$ requires $O(MN)$ memory. Another concern is that the summation of matrices in the TT-format leads to the TT-ranks growth and the technique to control the increase of ranks and we would need to apply slow rounding procedure to control the growth of TT-ranks. A better way to learn the TensorNet parameters is to compute the gradient of the loss function directly w.r.t. the cores of the TT-representation of $\mat{W}$.
+
+
+% If one choose to form an explicit vector after the TT-layer, the incoming gradient $\frac{\partial L}{y_s}$ vectors would be given exlicietly as well. In this case the computational complexity of this operation is $O(s r^2 m \max\{m, n\}^d D) = O(s r^2 m \max\{M, N\} D)$. If one choose to keep the result of the TT-layer in the TT-format, the incoming gradient $\frac{\partial L}{y_s}$ vectors would also be given in the TT-format. In this case the computational complexity would be $O()$.
+In what follows we use shortened notation for prefix and postfix sequences of indices: $\vec{i}_k^- := (i_1, \dots, i_{k-1})$, $\vec{i}_k^+ := (i_{k+1}, \dots, i_d)$, $\vec{i} = (\vec{i}_k^-, i_k, \vec{i}_k^+)$. We also introduce a notation for partial core products:
+\begin{equation}
+\begin{aligned}
+\vec{P}_k^-[\vec{i}_k^-, \vec{j}_k^-] &:= \vec{G}_1[i_1, j_1] \dots \vec{G}_{k-1}[i_{k-1}, j_{k-1}], \\
+\vec{P}_k^+[\vec{i}_k^+, \vec{j}_k^+] &:= \vec{G}_{k+1}[i_{k+1}, j_{k+1}] \dots \vec{G}_d[i_d, j_d].
+\end{aligned}
+\end{equation}
+Using this notation for any $k = 2, \ldots, d-1$ we can rewrite the definition of the TT-layer transformation~(\ref{eq:TT-layer-output-detailed}):
+\begin{equation}
+\label{eq:TT-layer-tensor-form}
+\tensel{Y}(\vec{i}) = \tensel{Y}(\vec{i}_k^-, i_k, \vec{i}_k^+) =
+\sum_{\vec{j}_k^-, j_k, \vec{j}_k^+}  \vec{P}_k^-[\vec{i}_k^-, \vec{j}_k^-] \mat{G}_k[i_k, j_k] \vec{P}_k^+[\vec{i}_k^+, \vec{j}_k^+] \tensel{X}(\vec{j}) + \tensel{B}(\vec{i}).
+\end{equation}
+
+The gradient of the loss function $L$ w.r.t. to the $k$-th core in the position $[\tilde{i}_k, \tilde{j}_k]$ can be computed using the chain rule:
+\begin{equation}
+\label{eq:d-L-d-G}
+\underbrace{\frac{\partial{L}}{\partial{\vec{G}_k[\tilde{i}_k, \tilde{j}_k]}}}_{\rank_{k-1} \times \rank_{k}} = \sum_{\vec{i}} \frac{\partial{L}}{\partial{\tensel{Y}(\vec{i})}} \frac{\partial{\tensel{Y}}(\vec{i})}{\partial{\vec{G}_k[\tilde{i}_k, \tilde{j}_k]}}.
+\end{equation}
+Given the gradient matrices $\frac{\partial{\tensel{Y}}(\vec{i})}{\partial{\vec{G}_k[\tilde{i}_k, \tilde{j}_k]}}$ the summation~(\ref{eq:d-L-d-G}) can be done explicitly in $O(M)$ time, where $M$ is the length of the output vector $\vec{y}$. In what follows we show how to compute the matrix $\frac{\partial{\tensel{Y}}(\vec{i})}{\partial{\vec{G}_k[\tilde{i}_k, \tilde{j}_k]}}$ for any values of $\vec{i}$, $k$, $\tilde{i}_k$ and $\tilde{j}_k$.
+
+\begin{table}\begin{center}
+    \begin{tabular}{ l | l | l }
+    %hline
+    Operation & Time & Memory \rule{0pt}{1.0\normalbaselineskip} \\ \hline
+    FC forward pass & $O(M N S)$ & $O(M N + N S + M S)$ \rule{0pt}{1.0\normalbaselineskip}\\ %\hline
+    TT forward pass & $O(d r^2 m \max\{M, N\} S)$ & $O(r \max\{M, N\} S)$ \\ %\hline
+    FC backward pass & $O(M N S)$ & $O(M N + N S + M S)$ \\ %\hline
+    TT backward pass & $O(d^2 \rank^4 m \max\{M, N\} S)$ & $O(\rank^3 \max\{M, N\} S)$ \\[-0.5cm] %\hline
+    \end{tabular}
+    \end{center}
+    \caption{Comparison of the asymptotic complexity and memory usage of a $M \times N$ TT-layer and a $M \times N$ fully-connected layer (FC) for an $S$-object batch. The input and the output tensor shapes are $m_1 \times \ldots \times m_d$ and $n_1 \times \ldots \times n_d$ respectively, $m$ is the maximal mode size $m = \max_{k = 1 \ldots d} m_k$ and $\rank$ is the maximal TT-rank. In principle the TT-operations can be implemented without linear memory w.r.t. $S$, however it will be less vectorized and cache efficient.\label{tbl:complexity-comparison}\vspace{-0.4cm}}
+\end{table}
+
+
+Let us fix the TT-core index $k \in \{1, \dots, d\}$ and $\tilde{i}_k \in \{1, \dots, m_k\}$, $\tilde{j}_k \in \{1, \dots, n_k\}$.
+For any $\vec{i} = (i_1, \dots, i_d)$ such that $i_k \neq \tilde{i}_k$ the value of $\tensel{Y}(\vec{i})$ doesn't depend on the elements of $\mat{G}_k[\tilde{i}_k, \tilde{j}_k]$ making the corresponding gradient $\frac{\partial \tensel{Y}(\vec{i})}{\partial \mat{G}_k[\tilde{i}_k, \tilde{j}_k]}$ to be zero. Similarly, any summand in the eq.~\ref{eq:TT-layer-tensor-form} such that $j_k \neq \tilde{j}_k$ doesn't affect the gradient $\frac{\partial{\tensel{Y}}(\vec{i})}{\partial{\vec{G}_k[\tilde{i}_k, \tilde{j}_k]}}$. This observations allow us to consider only those $\vec{i}$ in eq.~\ref{eq:d-L-d-G}, where $i_k = \tilde{i}_k$ and only those $j_k$ in eq.~\ref{eq:TT-layer-tensor-form}, that are equal to $\tilde{j}_k$.
+
+$\tensel{Y}(\vec{i}_k^-, \tilde{i}_k, \vec{i}_k^+)$ is a linear function of the core $\mat{G}_k[\tilde{i}_k, \tilde{j}_k]$~(see eq.~\ref{eq:TT-layer-tensor-form}) and its gradient is:
+\begin{align*}
+\frac{\partial{\tensel{Y}(\vec{i}_k^-, \tilde{i}_k, \vec{i}_k^+)}}{\partial{\vec{G}_k[\tilde{i}_k, \tilde{j}_k]}} = \sum_{\vec{j}_k^-, \vec{j}_k^+} \underbrace{\left ( \vec{P}_k^-[\vec{i}_k^-, \vec{j}_k^-] \right )^\intercal }_{\rank_{k-1} \times 1}  \underbrace{\left (\vec{P}_k^+[\vec{i}_k^+, \vec{j}_k^+] \right )^\intercal}_{1 \times \rank_{k}} \tensel{X}(\vec{j}_k^-, \tilde{j}_k, \vec{j}_k^+).
+% &\frac{\partial{y_s}(\vec{i})}{\partial{\vec{G}_k[i_k, j_k]}} &&=\\
+% &\sum_{\vec{j}_k^-, \vec{j}_k^+} &&\overbrace{G_1[i_1, j_1] \dots G_{k-1}[i_{k-1}, j_{k-1}]}^{\mathbb{R}^{1 \times \rank_{k-1}}}\\
+% &&&\underbrace{G_{k+1}[i_{k+1}, j_{k+1}] \dots G_s[i_s, j_s]}_{\mathbb{R}^{\rank_{k} \times 1}} \underbrace{\vec{x}_s(\vec{j})}_{\mathbb{R}}
+\end{align*}
+
+Denote the partial sum as $\tens{R}_{k}$:
+\begin{align*}
+\tensel{R}_{k}(j_1, \dots, j_{k-1}, \tilde{j}_k, i_{k+1}, \dots, i_d, \alpha_{k}) = \tensel{R}_{k}(\vec{j}_{k}^-, \tilde{j}_k, \vec{i}_k^+, \alpha_{k}) = \sum_{\vec{j}_k^+} \vec{P}_k^+[\vec{i}_k^+, \vec{j}_k^+] ~ \tensel{X}(\vec{j}_k^-, \tilde{j}_k, \vec{j}_k^+).
+\end{align*}
+The column index $\alpha_{k+1}$ of the matrix $\mat{G}_{k+1}[i_{k+1}, j_{k+1}]$ is summed out because of the matrix product $\mat{G}_{k+1}[i_{k+1}, j_{k+1}] \cdot \mat{G}_{k+2}[i_{k+2}, j_{k+2}]$ and the row index $\alpha_{k}$ remains as the index of the partial sum $\tens{\tens{R}}_{k}$. The whole sequence of tensors $(\tens{\tens{R}}_{k})_{k = 1}^{d-1}$ can be computed via dynamic (by pushing sums w.r.t. each $j_{k+1}, \ldots, j_d$ inside the equation and summing out one index at a time) programming in $O(d r^2 m \max\{M, N\})$.
+
+We have
+\begin{align*}
+\frac{\partial \tensel{Y}(\vec{i}_k^-, i_k, \vec{i}_k^+)}{\partial \mat{G}_k[\tilde{i}_k, \tilde{j}_k]} =
+\begin{cases}
+\sum_{\vec{j}_k^-} \vec{P}_k^-[\vec{i}_k^-, \vec{j}_k^-] \tensel{R}_{k}(\vec{j}_{k}^-, \tilde{j}_k, \vec{i}_k^+, \alpha_{k}) & \text{ if } i_k = \tilde{i}_k, \\[0.2cm]
+0 & \text{ if } i_k \neq \tilde{i}_k.
+\end{cases}
+\end{align*}
+
+Again, it can be efficiently computed via dynamic programming (by summing out one index $j_1, \ldots, j_{k-1}$ at a time). The overall computational complexity of the backward pass is $O(d^2 \rank^4 m \max\{M, N\})$.
+
+The presented algorithm reduces to a sequence of matrix-by-matrix products and permutations of dimensions and thus can be accelerated on a GPU device.
+
+
+Сложность $O(d r^2 n \max\{m, n\}^d) = O(d r^2 n \max\{M, N\})$.
+
+\section{Выводы по главе} \label{sec:tensornet-conclusion}
+Recent studies indicate high redundancy in current neural network parametrization. To exploit this redundancy we propose to use the TT-decomposition framework on the weight matrix of a fully-connected layer and to use the TT-cores as the parameters of the layer. This allows us to train fully-connected layers compressed by up to $200\,000\times$ compared to the explicit parametrization without significant error increase. Our experiments prove that is is possible to capture complex dependencies within the data by using much more compact representations of neural networks. On the other hand it becomes possible to use much wider layers than was available before and the preliminary experiments on the CIFAR-10 dataset show that wide and shallow TensorNets achieve promising results (setting new state-of-the-art for non-convolutional neural networks). Much more work needs to be done in this direction and careful combining of the TT-layer with recent advances in deep learning may lead to better results in different applied domains.
+
+Another appealing property of the TT-layer is faster inference time (compared to the corresponding fully-connected layer). All in all a wide and shallow TensorNet can become a time and memory efficient model to use in real time applications and on mobile devices.
+
+The main limiting factor for a $M \times N$ fully-connected layer size is its parameters number $MN$. The limiting factor for a $M \times N$ TT-layer is the maximal linear size $\max\{M, N\}$. As a future work we plan to consider the inputs and outputs of layers in TT-format thus allowing billions of hidden units in a TT-layer. Another direction of future work is to try TT-layers in different architectures such as Long Short-Term Memory~\cite{hochreiter1997LSTM}.
+
