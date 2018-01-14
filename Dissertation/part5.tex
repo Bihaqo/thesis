@@ -1,6 +1,6 @@
 \chapter{Комплексы программ} \label{chap:exm}
 \section{Библиотека тензорных вычислений t3f} \label{sec:t3f}
-Для выполнения численных рассчетов с использованием разложения в Тензорный Поезд, автором был разработан программный пакет на языке Python. Главные отличия от уже существующих реализаций разложения в Тензорный Поезд[CITE] составляют:
+Для выполнения численных расчетов с использованием разложения в Тензорный Поезд, автором был разработан программный пакет на языке Python. Главные отличия от уже существующих реализаций разложения в Тензорный Поезд[CITE] составляют:
 \begin{enumerate}
 	\item Поддержка работы на графических ускорителях (GPU) для всех операций. Пакет автоматически проверяет доступно ли на данной машине устройство GPU и если доступно, переносит рассчеты на графический ускоритель.
 	\item Расширенная поддержка Римановой оптимизации. Единственный альтернативный пакет в котором есть поддержка Римановой оптимизации это TTPY, в котором есть только операция проекции на касательное пространство (которая была реализована в этом пакете автором данной диссертации). В пакете T3F доступно множество частных случаев требующихся для реализации численных методов Римановой оптимизации, которые формально могут быть реализованы с помощью комбинации оператора проекции и базовых операций таких как матрично-векторное умножение, но при реализации этих частных случаев в отдельной функции позволяют значительно ускорить вычисления. Примерами таких операций являются проекция матрично-вектороного произведения на касательную плоскость ТТ-вектора $P_b(A c)$ и вычисления матрицы Грама проекций на касательную плоскость $G_{ij} = <P_b(x_i), P_b(x_j)>$.
@@ -61,19 +61,445 @@ res = t3f.full(tt_res)
                                               \endlastfoot
 to\_tt\_tensor(a) & Факторизует тензор а в формат Тензорного Поезда\\
 to\_tt\_matrix(a) & Факторизует матрицу а в матричный формат Тензорного Поезда\\
-[TODO]
+TODO & TODO
 % \hline 
 \end{longtable*}
+\normalsize% возвращаем шрифт к нормальному
 
 \subsection{Быстродействие пакета}
-vs ttpy and cpu vs gpu
+Для оценки быстродействия пакета T3F, была сгенерирована случайная матрица в ТТ формате размера $10^{10} \times 10^{10}$ с 10 ядрами и ТТ-рангами равными $10$, a так же случайный ТТ-векторов (матриц размера $10^{10} \times 1$) так же с ТТ рангами равными 10. Было замерено время работы матрично-векторного умножения (`матвек`), матрично-матричного умножения (`матмул`), вычисления нормы Фробениуса (`норма`) и вычисление матрицы Грама (`Грам`). Каждая операция была выполнена для одного объекта (например умножение одной матрицы на один вектор) и для батча из 100 объектов (например умножение одной матрицы на 100 различных векторов). В случае матрицы Грама, применение операции к одному объекту означает вычисление скалярного произведения вектора на себя, а в случае батча из 100 объектов вычисление матрицы Грама размера $100 \times 100$. Две последнии операции были проведены на тензорах ТТ ранга 100: округление тензора размера $10^{10}$ c TT-ранга 100 до ТТ-ранга 10 и проекция тензора ТТ-ранга 100 на касательную плоскость тензора ТТ-ранга 10 (см. Тбл.~\ref{tbl:t3f-benchmark}).
+\begin{center}
+\begin{table}%[!htbp]
+  \begin{tabular}{  l c c  c  c c}
+    \hline
+%     Op & TTPY & 1 object CPU & 1 object GPU & 100 objects CPU & 100 objects GPU  \\ \hline
+    \multirow{3}{1.8cm}{\centering  Op } & \multirow{3}{2.2cm}{\centering TTPY \\ 1 объект \\ CPU} & \multirow{3}{2.2cm}{\centering T3F \\ 1 объект \\ CPU } & \multirow{3}{2.2cm}{\centering T3F \\ 1 объект \\ GPU } & \multirow{3}{2.9cm}{\centering T3F \\ 100 объектов \\ CPU } & \multirow{3}{2.9cm}{\centering T3F \\ 100 объектов \\ GPU }  \\[1.5cm] \hline
+    матвек          &            11.142 &       0.129 &       0.121 &         0.003 &         0.003 \\
+матмул          &            86.191 &       0.125 &       0.133 &         0.004 &         0.004 \\
+нормы            &             3.790 &       1.902 &       0.893 &         0.422 &         0.050 \\
+Грам            &             0.145 &       0.806 &       0.703 &         0.029 &         0.001 \\
+округление           &            73.027 &       0.159 &       0.165 &         0.006 &         0.006 \\
+проекция &           116.868 &       1.564 &       1.658 &         0.017 &         0.018 \\
+    \hline
+  \end{tabular}
+  \caption{Время работы в мс различных операций в библиотеке TTPY и в библиотеке T3F на CPU и на GPU. Время работы для батча из 100 объектов приведено в расчете на один объект, т.е. например выполнение 100 матрично-векторных умножений (`матвек`) на CPU занимает 0.3 мс, но в таблице приведено время 0.003 в пересчете на один объект. Замеры времены проводились на сервере NVIDIA DGX-1 с графическими ускорителями Tesla V100 GPU (при расчете использовался только один графический ускоритель) и процессором Intel(R) Xeon(R) CPU E5-2698 v4 @ 2.20GHz с 80 логическими ядрами в двойной точности. \label{tbl:t3f-benchmark}}
+\end{table}
+\end{center}
 
+\subsection{Реализация новых операций и их ассимптотическая сложность}
+В этом разделе описаны детали реализации операций, которые были впервые разработаны в рамках пакета T3F а так же проведен анализ ассимптотической сложности их работы. Операции приведенные ниже используются в методе поиска собственных значений эрмитовых матриц предложенном в данной диссертацие~(раздел~\ref{sec:quantum-solver}) и в работе~\cite{izmailov2018scalable}.
+
+
+\paragraph{Проекция матрично-векторного умножения}
+Проекцию матрично-векторного умножения на касательное пространство ТТ-вектора $P_b(Aс)$ можно реализовать использую последовательность из двух операций: матрично-векторное умножение и проекцию за асимптотическую сложность $\compl(b d r_A r_c n (r_A r_c (r_b + n) + r_b^2))$, но при объединении этих двух операций в одну возможно выполнить их асимптотически быстрее за $\compl(b d r_A r_c n (r_c r_b + n r_A r_b + r_b^2)$ операций. В библиотеке T3F быстрая версия данной операции доступна в виде функции \texttt{t3f.project\_matmul(c, b, A)}.
+
+
+
+\paragraph{Квадратичная форма}
+Подсчет квадратичной формы ТТ-матрицы и набора ТТ-векторов $f_{i} = b_i^\intercal A c_i$ можно за $\compl(???)$, тогда как  последовательность из матрично-векторного умножения и векторно-вектроного умножения занимает $\compl()$. В библиотеке T3F быстрая версия данной операции доступна в виде функции \texttt{t3f.quadratic\_form(A, b, c)}.
+
+Для того, чтобы построить быстрый метод вычисления квадратичной формы, рассмотрим алгоритм матрично-вектороного умножения предложенный в~\cite{oseledets2011ttMain}. Пусть задан TT-вектор $c$ и ТТ-матрица $A$ с ядрами $G_1^c, \ldots, G_d^c$ и $G_1^A, \ldots, G_d^A$ соответственно. Тогда ТТ-ядра матрично векторного умножения $z = Ac$ представимы в виде:
+\[
+G_k^z[i_k] = \sum_{j_k} G_k^A[i_k, j_k] \otimes G_k^c[j_k]
+\]
+
+Рассмотрим теперь умножения ТТ-вектора $z$ на ТТ-вектор $b$: $f = \vec{b}\vec{z} = \vec{b}A \vec{c}$
+\[
+G_k^f = \sum_{i_k} G_k^b[i_k] \otimes G_k^z[i_k] = \sum_{i_k, j_k} G_k^b[i_k] \otimes G_k^A[i_k, j_k] \otimes G_k^c[j_k]
+\]
+\[
+f = G_1^f \ldots G_d^f
+\]
+
+Тогда алгоритм вычисления $f$ может быть записан следующим образом
+
+\begin{algorithm}[tb]
+   \caption{Вычисление скалярного произведения $f = b^\intercal A c$}
+   \label{alg:quadratic-form}
+\begin{algorithmic}[1]
+   \REQUIRE факторы $\mat{A}, \vec{b}, \vec{c}$
+   \ENSURE $f = b^\intercal A c$
+   \STATE $r_1 = \sum_{i_k} G_1^z[i_k]$
+   \FOR{$k := 2$ \TO $d$}
+   \STATE $r_k = r_{k-1}G_k^f$
+   \ENDFOR
+\end{algorithmic}
+\end{algorithm}
+%через последовательность шагов $k = 2, \ldots, d$
+%\[
+%r_k(\alpha_{k-1}^b,\alpha_{k-1}^A, \alpha_{k-1}^c) = \sum_{\alpha_{k-1}^b,\alpha_{k-1}^A, \alpha_{k-1}^c} r_{k-1}(\alpha_{k-1}^b,\alpha_{k-1}^A, \alpha_{k-1}^c) G_k^f(\alpha_{k-1}^b,\alpha_{k-1}^A, \alpha_{k-1}^c,\alpha_{k}^b,\alpha_{k}^A, \alpha_{k}^c) = \sum_{i_k, j_k, \alpha_{k-1}^b,\alpha_{k-1}^A, \alpha_{k-1}^c} G_k^b[i_k](\alpha_{k-1}^b, \alpha_{k}^b) G_k^A[i_k, j_k] \otimes G_k^c[j_k]
+%\]
+
+\paragraph{Матрица Грама}
+В библиотеке T3F реализована функция подсчета матрицы Грама $G_{i,j} = b_i^\intercal A b_j$ для матрицы $A$ и батча векторов $b$ реализованная параллельно по размеру батча и доступная в виде функции \texttt{t3f.gram\_matrix(b, A)}. 
+
+\paragraph{Матрица скалярных произведений элементов касательного пространства}
+Cкалярное произведение элементов одного касательного пространства многообразия ТТ-векторов можно вычислять быстрее чем в общем случае (\cite{Steinlechner2016}, раздел 4.4.4). В библиотеке T3F реализована функция \texttt{t3f. pairwise\_flat\_inner\_projected(a, b)} вычисляющая матрицу скалярных произведений $G_{i,j} = a_i^\intercal b_j$ работающая за $\compl(\text{batch\_size}_a \text{batch\_size}_b d r^2 n)$  (тогда как в общем случае такая операция требует $\compl(\text{batch\_size}_a \text{batch\_size}_b d r^3 n)$) и паралелизованная по числу элементов батчей $a$ и $b$.
 
 \subsection{Использование библиотеки T3F в научных проектах}
-TT-GP, eigensolver?, ещё погуглить?
+Помимо проектов разработанных в рамках данной диссертации~\cite{tensor-net?,mrf?,exp machines?,quantum}, библиотека T3F была использована в следующих научных проектах
+\paragraph{Мастшабируемые Гауссовские процессы на основе разложения в тензорный поезд} В данной работе рассматривалась проблема уменьшение ассимптотической сложности обучения регрессии на основе Гауссовских процессов~\cite{GP}. Аналитическое решение данной задачи обладает кубической сложностью по размеру обучающей выборки и потому не применимо к выборкам современных размеров, которые могут достигать миллионов обучающих объектов~\cite{Russakovsky2015ImageNet}. Подходы, разрабатывающиеся в данный момент для ускорения обучения данного метода опираются на так называемые индуцирующие точки~\cite{candela2005}. Идея данного подхода состоит в том, чтобы ввести новые скрытые переменные в вероятностную модель регрессии на основе Гауссовских процессов которые представляют (неизвестные) значения искомой функции в новых фиксированных точках. Затем, применяя мастшабируемый вариационный вывод приближая апосториорное распределение на латентные переменные с помощью нормального распределения с настраиваемыми параметрами и матрицей ковариации являющейся кронекеровым произведение матриц параметров, можно приближенно обучать модель со сложностью $\compl(N+ d M^{1 + 1/d})$ где $N$ это размер обучающей выборки, $M$ число введенных латентных переменных и $d$ размерность признакового пространства~\cite{wilson2015}. Такая ассимптотическая сложность так же оказывается черезмерной для обучения модели на данных современного размера (в частности потому, что число требуемых латентных переменных $M$ для поддержания заданной точности растет экспоненциально от размерности пространства $d$ в обсуждаемом методе), поэтому в работе~\cite{izmailov2018scalable} было предложено аппроксимировать тензор средних значений к обучению регрессии было предложено аппроксимировать вектор средних приближенного апостериорное распределение на латентные переменные в формате ТТ-вектора. Использование библиотеки T3F позволило без труда соединить регрессию на основе Гауссовских с обучением признакового пространства с помощью исскуственных нейронных сетей~\footnote{\url{https://github.com/izmailovpavel/TTGP}}.
 
+\paragraph{Выразительная способность рекурентных нейронных сетей}
+В 2016 году для анализа теоретических свойств нейронных сетей было предложено трактовать функции которые задаются полиномиальными нейросетями как скалярное произведение тензора всевозможных произведений признаков исходных данных на тензор параметров представленных в одном из низкоранговых тензорных форматах~\cite{cohen2016expressive}. Так например полиномиальный нейросетевой классификатор $l_y(X)$ по входным данным $X$ (например изображению) возвращающий логарифм вероятности класса $y$ может быть записан в следующем виде
+\begin{equation}\label{eq:weights-features-dot}
+l_y(X) = \langle  \mathcal{W}_y, \Phi(X) \rangle,
+\end{equation}
+где $\Phi(X)$ это тензор построенных по входным данным и заданный следующим образом
+\begin{equation}\label{eq:feature-tens}
+\Phi(X)^{i_1 i_2 \hdots i_d} = f_{\theta_{i_1}} (\textbf{x}_1) f_{\theta_{i_2}}(\textbf{x}_2) \hdots f_{\theta_{i_d}} (\textbf{x}_d),
+\end{equation}
+Здесь $f_{\theta_{i_k}}$ это произвольные признаковые преобразования преобразующие входные данные $X$ в вещественное число, а $\theta$ -- настраиваемые параметры модели.
+
+В зависимости от способа паратризации тензора параметров $\mathcal{W}$, формула~\eqref{eq:weights-features-dot} может соотсветсовать различным нейросетевым структурам. Так, в работе~\cite{cohen2016expressive} было показано, что при использовании Канонического Формата~\cite{harshman1970foundations,carroll1970analysis} тензоров для задания $\mathcal{W}$
+\begin{equation}\label{eq:candec}
+\mathcal{W}^{i_1 i_2 \hdots i_d} = \sum_{\alpha=1}^{r} \textbf{v}_{1, \alpha}^{i_1}\textbf{v}_{2, \alpha}^{i_2} \hdots 
+ \textbf{v}_{d, \alpha}^{i_d}, \quad \textbf{v}_{i, \alpha} \in \mathbb{R}^{n_i}.
+\end{equation}
+формула~\eqref{eq:weights-features-dot} соответсвует нейросети с одним скрытым слоем, а при использовании формата Иерархического Таккера~\cite{grasedyck2010hierarchical, grasedyck2011introduction, hackbusch2012tensor}, формула~\eqref{eq:weights-features-dot} соответсвует глубокой нейронной сети. Так же в работе~\cite{cohen2016expressive} была показана теорема о том, что мера тензоров имеющих минимальный CP- и HT-ранги связанных экспоненциальным отношением равна 1, т.е. для почти всех тензоров размера $n^d$ имеющих ранг $r$ в формате иерархического таккера, CP-ранг будет как минимум $\min\{r, n\}^{d/2}$. А показанная связь с нейросетевыми моделями в свою очередь позволяет проинтерпритировать теорему на языке нейросетей: почти наверное, случайная глубокая нейросеть потребует экспоненицально (по числу слоев) большего числа параметров от нейросети с одним скрытым слоем чтобы реализовать ту же функцию.
+
+В данной работе мы впервые показали экспоненциальную выразительность рекурентных нейросетей по сравнению с неглубокими аналогами. Мы показали, что при использовании формата Тензорного Поезда~\cite{oseledets2011tensor} для тензора весов $\mathcal{W}$
+\begin{equation}\label{eq:tt-decomp}
+\mathcal{W}^{i_1 i_2 \hdots i_d} = \sum_{\alpha_1=1}^{r_1} \sum_{\alpha_2=1}^{r_2} \hdots \sum_{\alpha_{d-1}=1}^{r_{d-1}} G_{1}^{i_1 \alpha_{1}} G_{2}^{\alpha_{1} i_2 \alpha_{2}} \hdots G_{d}^{\alpha_{d-1} i_d},
+\end{equation}
+формула~\eqref{eq:weights-features-dot} соотсветвует рекуретной нейросети последовательно обрабатывающей данные $f_{\theta_{i_1}} (\textbf{x}_1) f_{\theta_{i_2}}(\textbf{x}_2) \hdots f_{\theta_{i_d}} (\textbf{x}_d)$.
+
+Нами была показаны теорема, согласно которой множество тензоров размера $n^d$ с ТТ-рангом $r$ и каноническим рангом больше или равным $\min\{n, r\}^{d/2}$ имеет меру единица. Основная идея доказательства состоит в том, что множество тензоров задаваемых неравенством на ранги (полиномиальным неравенством) составляет неприводимое алгебраическое многообразие, а значит достуточно найти один пример который для любых $n, d  $ и $r$ имеет достаточно большой канонический ранг чтобы утверждать что это утверждение верно на множестве меры один.
+
+Для доказательства оценки снизу на канонический ранг использовалась слудующая идея. Рассмотрим тензор $\mathcal{W}^{i_1 i_2 \hdots i_d}$ и два проивзольных непересекающихся множества индексов $s = \lbrace i_1, i_2 \hdots i_{m_s} \rbrace$ и $t = \lbrace j_1, j_2 \hdots j_{{d-m_s}} \rbrace$ суммарная длина которых равна $d$. Назовем матритезацией тензора  $\mathcal{W}$ заданной индексами $(s, t)$ следующую матрицу
+$$
+W^{(s, t)} \in \mathbb{R}^{n^{|s|} 
+\times 
+n^{|t|}},
+$$
+Можно показать, что если канонический ранг тензора $\mathcal{W}$ равен $r$, тогда матричный ранг любой его матритизации $(s, t)$ не превышает $r$
+$$
+\rank~W^{(s, t)} \leq r
+$$
+
+Таким образом, для доказательства утверждения теоремы достаточно привести пример тензора ТТ-ранга $r$ и некоторую матритезацию данного тензора матричного ранга как минимум $\min\{n, r\}^{d/2}$, что и было сделано в работе.
+
+После доказательства теоремы можно инетпритировать ее на языке нейросетей: для реализации функции заданной случайной рекуретной нейросетью специального вида потребуется однослойная нейронная сеть с количеством параметров экспоненциально большим чем количество параметров рекурентной сети.
 
 \section{Реализация алгоритма вывода в МРФ} \label{sec:mrf-code}
+
+В данном разделе приводятся результаты численных экспериментов по сравнению точности и скорости работы метода по вычислению нормировочной константы МРФ предложенного в разделе~\ref{sec:partition-function} с аналогами.
+
+\begin{figure}[t]
+\begin{center}
+\begin{tabular}{m{0.3cm}@{}m{7cm}}
+\begin{sideways}
+\parbox{3.5cm}{\centering\scriptsize максимальный TT\hyp{}ранг }
+\end{sideways}
+& \includegraphics[width=7.0cm]{images/ranks_growth_temp=10,N=12,J=1_v2.pdf}
+\\
+& \parbox{7.3cm}{\centering\scriptsize размер решетки Изинга } \\
+\end{tabular}
+\caption{Максимальный TT\hyp{}ранг тензора энергии~$\mathbf{E}$ и тензора ненормированной вероятности~$\widehat{\mathbf{P}}$ для гомогенной решетки Изинга с температурой равной~10 и весами парных потенциалов равными~$1$. Детали см. в разделе \ref{sec::exp1}. \label{fig:ranks-growth}}
+\end{center}
+\end{figure}
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{m{0.3cm}@{}m{7cm}}
+\begin{sideways}
+\parbox{4cm}{\centering\scriptsize   }
+\end{sideways}
+& \includegraphics[width=7cm]{images/2norm.pdf}
+\\
+& \parbox{5.3cm}{\centering\scriptsize номер переменной~$i=1,\ldots,n$ } \\
+\end{tabular}
+\end{center}
+\caption{ Сравнение Фробениусовой и спектральной нормы матрицы~$B_i$ с верхней оценкой~$U_i$. График построен для модели Изинга с решеткой размера $10 \times 10$, в которой коэффициенты унарных и парных потенциалов сгенерированы из равномерного распределения на $[-1, 1]$, а температура равна~$1$.
+\label{fig:zUpperBound}}
+\end{figure}
+\begin{figure}
+\begin{center}
+\begin{tabular}{m{0.3cm}@{}m{7cm}}
+\begin{sideways}\parbox{4cm}{\centering\scriptsize  $\log Z$ }\end{sideways}
+& \includegraphics[width=7cm]{images/10x10,J=1,average=10,confInt_v3.pdf}
+\\
+& \parbox{7.3cm}{\centering\scriptsize температура~$T$} \\
+\end{tabular}
+\end{center}
+\caption{Доверительный интервал на значение нормировочной константы~$Z$, полученный из теоремы~\ref{main-theorem} и неравенства~\eqref{eq:l2computing}. Детали см. в разделе \ref{sec::expZ}.  \label{fig:zConf}}
+\end{figure}
+
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{m{0.3cm}@{}m{7cm}}
+\begin{sideways}\parbox{4cm}{\centering\scriptsize  $\log Z$ }\end{sideways}
+& \includegraphics[width=7cm]{images/10x10,J=1,average=10,confInt_v3.pdf}
+\\
+& \parbox{7.3cm}{\centering\scriptsize температура~$T$} \\
+\end{tabular}
+\end{center}
+\caption{Доверительный интервал на значение нормировочной константы~$Z$, полученный из теоремы~\ref{main-theorem} и неравенства~\eqref{eq:l2computing}. Детали см. в разделе \ref{sec::expZ}.  \label{fig:zConf}}
+\end{figure}
+
+\begin{figure*}
+\begin{center}
+\vskip -0.3cm
+\begin{tabular}{c@{}c@{\quad}c}
+\begin{tabular}{m{0.3cm}@{}m{5.5cm}}
+\begin{sideways}\parbox{4cm}{\centering\scriptsize  $|\log \widehat{Z} - \log Z|$ }\end{sideways}
+& \includegraphics[width=5.5cm]{images/10x10,J=1,average=50_warm_MCMC_comparison_v3.pdf}
+\\
+& \parbox{5.8cm}{\centering\scriptsize температура~$T$ }
+\label{fig:tmp}
+\end{tabular}
+&
+\begin{tabular}{m{0.3cm}@{}m{5.5cm}}
+\begin{sideways}\parbox{4cm}{\centering\scriptsize  $|\log \widehat{Z} - \log Z|$ }\end{sideways}
+& \includegraphics[width=5.5cm]{images/wish_grid_mixed_n10_f1_0_worked3.pdf}
+\\
+& \parbox{5.8cm}{\centering\scriptsize сила парных потенциалов~$f$ }
+\end{tabular}
+&
+% \includegraphics[width=1.8cm]{figures/Z_legend_worked3.pdf}
+\\
+(a)
+&
+(b)
+&
+\\
+\end{tabular}
+\end{center}
+\caption{На графиках представлены результаты экспериментов по подсчету нормировочной константы~$Z$. На графике~(a) предложенный метод (TT) сравнивается с другими на гомогенных моделях Изинга разной температуры. Для каждого значения температуры генерируется  50 моделей и указывается медиана и верхняя и нижняя квартили. На графике~(b) предложенный метод сравнивается с методом WISH на гетерогенных моделях Изинга. На обоих графиках изображены ошибки оценки~$Z$ (чем меньше значение --- тем лучше).
+\label{fig:zExperiments}}
+\end{figure*}
+
+
+
+\alert{TODO: реализация.}
+
+
+\subsection{Модель Изинга}
+Основная модель для экспериментов --- \emph{модель Изинга}.
+Функция энергии модели Изинга задаётся следующим образом:
+% In our experiments we use the Ising model as the main playground.
+% The energy of the model is defined as follows:
+\begin{equation}
+\label{eq::ising}
+\mathbf{E}(\vec{x}) = -\frac{1}{T}\left(\sum_{i=1}^n x_i h_i + \sum_{(i,j) \in \mathcal{E}} c_{ij} x_i x_j\right),
+\end{equation}
+где переменные $x_i$, $i = 1,\ldots,n$ принимают значения из множества~$\{-1, 1\}$. Коэффициенты~$h_i$ будем называть \emph{унарными весами}, коэффициенты~$c_{ij}$ --- \emph{парными весами}, а~$T$ --- \emph{температурой}. Парные связи зависят от выбранного множества ребер~$\mathcal{E}$. В большинстве экспериментов будет использоваться 4-связная решетка размера~$10 \times 10$. Будем называть модель \emph{гомогенной}, если все парные веса равны друг другу ($c_{ij} = c$), и \emph{гетерогенной} иначе.
+% where variables $x_i$, $i = 1,\ldots,n$ take values from set~$\{-1, 1\}$.  We refer to coefficients~$h_i$ as unary weights, to~$c_{ij}$ as pairwise weights, and to parameter~$T$ as temperature. Pairwise connections between the variables are determined w.r.t. a graph of connectivity. We typically use square 4-connected grids of $10\times 10$ nodes. If all pairwise weights are equal ($c_{ij} = c$) we call the Ising model  homogeneous and heterogeneous otherwise.
+
+% \vspace{-0.2cm} In all our experiments we use a non-optimized MATLAB implementation of our methods. For operations related to the TT-format we use the TT-Toolbox\footnote{\url{http://spring.inm.ras.ru/osel/download/tt22.zip}} implemented in MATLAB.
+% In our evaluation we use mainly use homogeneous and heterogeneous Ising model and we refer to the suppl. material for the detailed descriptions of the experimental setup.\\[-0.8cm]
+
+\subsection{TT\hyp{}ранги энергии и вероятности \label{sec::exp1}}
+В данном эксперименте проверяется утверждение из разделов~\ref{sec:energy-representation} и~\ref{sec:prob-representation}: при увеличении количества переменных TT\hyp{}ранги тензора энергии растут медленно, а TT\hyp{}ранги тензора ненормированной вероятности --- экспоненциально быстро~(рис.~\ref{fig:ranks-growth}). Рассматривается последовательность моделей Изинга с 4-x связной решеткой возрастающих размеров: от $1 \times 1$ до $12 \times 12$. Унарные веса $h_i$ сгенерированы из равномерного распределения $U[-1, 1]$, все парные веса $c_{ij}$ равны 1, температура $T$ равна 10. Для моделей Изинга указан максимальный TT\hyp{}ранг энергии и ненормированной вероятности при точном TT\hyp{}представлении и после TT\hyp{}округления с точностью~$10^{-8}$. Для точного TT\hyp{}представления тензора вероятности модели Изинга с решеткой размера $11 \times 11$ не хватает $8$GB оперативной памяти.
+
+% \vspace{-0.1cm} In this experiment we illustrate the claims made in sec.~\ref{sec:energy-representation} and~\ref{sec:prob-representation} about the TT-ranks of the energy and the unnormalized distribution tensors constructed for an MRF. In fig.~\ref{fig:ranks-growth} for each size of an Ising model we report the maximal TT-ranks of both the energy and the unnormalized probability represented in the TT-format exactly and after the TT-rounding procedure with accuracy~$10^{-8}$. As was claimed the TT-ranks are growing slowly with the increase of the size of the model for the energies as opposed to the probabilities. The exact TT-representations of the probability tensors of sizes~$11$ and~$12$ did not fit into 8GB of memory.\\[-0.8cm]
+
+\subsection{Нормировочная константа \label{sec::expZ}}
+В данном эксперименте исследуется алгоритм оценки нормировочной константы MRF~(алг.~\ref{alg:Z-computing}).
+% \vspace{-0.2cm} In this experiment we evaluate algorithm~\ref{alg:Z-computing} for computing the partition functions of MRFs.
+
+В первом эксперименте метод, основанный на TT\hyp{}разложении (TT), сравнивается со следующими методами из библиотеки LibDAI~\cite{mooij10libdai}: Belief Propagation (BP)~\cite{kschischang01bp}, Tree Expectation Propagation (TREEEP)~\cite{minka04treeep}, и методом Mean Field (MF)~\cite{wainwright08gm}. Так же проводится сравнение с методом annealed importance sampling method (AIS)~\cite{neal01ais} --- представителем методов MCMC. Результаты представлены на рис.~\ref{fig:zExperiments}a. Рассматривается набор моделей Изинга с 4-х связной решеткой размера $10 \times 10$, где унарные веса $h_i$ сгенерированы из равномерного распределения $U[-1, 1]$, все парные веса $c_{ij}$ равны 1, температура $T$ меняется в пределах от $10^{-1}$ до $10^{3}$. Для каждого значения температуры сгенерировано 50 моделей Изинга и указана медиана и верхняя и нижняя квартили абсолютной ошибки оценки логарифма нормировочной константы. Для метода AIS были выбраны параметры (1000 промежуточных распределений с выборкой размером 70), максимизирующие точность, достигнутую за 60 секунд. Для подсчета правильных ответов был использован метод junction tree~\cite{wainwright08gm}.
+
+% \vspace{-0.1cm} First we compare our method (TT) against the following methods implemeted in the LibDAI system~\cite{mooij10libdai}: Belief Propagation (BP)~\cite{kschischang01bp}, Tree Expectation Propagation (TREEEP)~\cite{minka04treeep}, and the Mean Field method (MF)~\cite{wainwright08gm}. In addition we compare against the annealed importance sampling method (AIS)~\cite{neal01ais} as a representative of the family of MCMC methods. The results are shown in plot~\ref{fig:zExperiments}a. For AIS method we've selected parameters (1000 intermidiate distribution, 70 samples each) to maximize the accuracy achieved within 60 seconds per model. The groundtruth values are computed using the junction tree algorithm. We report the average value ($\pm$ one standard deviation) of the absolute error of the logarithm of the computed partition functions.
+
+
+Во втором эксперименте проводится сравнение с недавно предложенным методом WISH на данных из оригинальной статьи Ермона и др.~\cite{ermon13wish}. Ермон рассматривал набор моделей Изинга с решеткой размера $10 \times 10$, унарными весами $h_i$ сгенерированными из равномерного распределения $U[-1, 1]$, температурой $T$ равной 1, и парными весами $c_{ij}$ сгенерированными из равномерного распределения $U[-f, f]$, где параметр $f$ меняется от $0.25$ до $3$. Результаты сравнения представлены на рис.~\ref{fig:zExperiments}b. Отметим, что метод WISH запускался на кластере и каждое вычислительное ядро работало не менее 15 минут. Наш неоптимизированый Matlab код работал не более 53 секунд на каждом примере (32 секунды в среднем).
+
+% \vspace{-0.1cm} In the second experiment we compare our method with the recently proposed WISH method~\cite{ermon13wish} on a dataset taken form their paper. The results of the comparison are presented in plot~\ref{fig:zExperiments}b. Note, that the WISH system is computationally very heavy and for this particular dataset it was run on a computational cluster for at least 15 minutes on each core. Our non-optimized MATLAB code worked at most 60 seconds on each example.
+
+На рис.~\ref{fig:zConf} изображен доверительный интервал, полученный путем оценивания результата теоремы~\ref{main-theorem} неравенством~\eqref{eq:l2computing}.
+
+% \vspace{-0.1cm} Finally, fig.~\ref{fig:zConf} presents the confidence bounds obtained by upper-bounding the result of theorem~\ref{main-theorem} using eq.~\eqref{eq:l2computing} and taking the logarithm of the inequality.\\[-0.8cm]
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{c@{\!\!\!}c}
+\begin{tabular}{m{0.3cm}@{}m{6.5cm}}
+\begin{sideways}\parbox{4cm}{\centering\scriptsize  ошибка подсчета маргинала }\end{sideways}
+& \includegraphics[width=6.5cm]{images/strong_mixed_spinglass_50_marginals_comparison_v3.pdf}
+& \parbox[t][0.5cm][t]{6.8cm}{\centering\scriptsize сила парных потенциалов~$f$ }
+\end{tabular}
+&
+\includegraphics[width=2.3cm]{images/legend_marginals_v3.pdf}
+\end{tabular}
+\end{center}
+\caption{Ошибка подсчета маргинальных распределений на наборе гетерогенных моделей Изинга. На графике указана среднемодульная ошибка вероятности класса ``-1'', усредненная по всем вершинам. Для каждого значения~$f$ генерируется 50 моделей Изинга и указывается медиана и верхняя и нижняя квартили.
+ \label{fig:marginals}}
+\end{figure}
+
+\subsection{Унарные маргинальные распределения \label{sec::expMarg}}
+В этом разделе исследуется качество подсчета маргинальных распределений предлагаемым методом (TT). Метод сравнивается с Belief Propagation (BP)~\cite{kschischang01bp}, Tree Expectation Propagation (TREEEP)~\cite{minka04treeep},  Mean Field (MF)~\cite{wainwright08gm} и Gibbs sampling~\cite{wainwright08gm}, реализованными в библиотеке LibDAI (рис.~\ref{fig:marginals}). Рассматривается набор моделей Изинга с решеткой размера $10 \times 10$, унарными весами $h_i$ сгенерированными из равномерного распределения $U[-1, 1]$, температурой $T$ равной 1, и парными весами $c_{ij}$ сгенерированными из равномерного распределения $U[-f, f]$, где параметр $f$ меняется от $0$ до $3$. Для каждого значения параметра $f$ результаты усредняются по 50 моделям.
+% \vspace{-0.2cm} In these experiments we evaluate the ability of our method to compute the marginal distributions.
+% We compare our method (TT) against Belief Propagation (BP)~\cite{kschischang01bp}, Tree Expectation Propagation (TREEEP)~\cite{minka04treeep},  Mean Field (MF)~\cite{wainwright08gm}, and Gibbs sampling~\cite{wainwright08gm} all implemented in the LibDAI system. The results of the comparison are presented in fig.~\ref{fig:marginals}.\\[-0.8cm]
+%
+\begin{table}[t]
+\caption{Относительные значения энергии, достигнутые методом минимизации энергии, основанном на TT\hyp{}разложении. За $0\%$ взята нижняя граница энергии полученная методом TRW-S, за $100\%$ --- значение прямой энергии TRW-S.
+% The relative value of energy for MAP-inference method based on the TT-decomposition. The lower bound ontained by TRW-S is $0\%$, the energy of TRW-S primal solution is $100\%$.
+\label{tbl:map}}
+\vskip 0.15in
+\begin{center}
+\begin{small}
+%\begin{sc}
+\begin{tabular}{lcccr}
+\hline
+%\abovespace\belowspace
+Задача & $n$ & $d$ & Энергия TT  \\
+\hline
+%\abovespace
+geo-surf-3/gm6   & 320 & 3 & 48.41\% \\
+geo-surf-3/gm20 & 348 & 3 & 95.83\%  \\
+geo-surf-3/gm203    & 187 & 3 & 98.69\%  \\
+geo-surf-7/gm11   & 125 & 7 & 1769.65\%  \\
+%\belowspace
+matching/matching1    & 19 & 19 & 135.47\%   \\
+\hline
+\end{tabular}
+%\end{sc}
+\end{small}
+\end{center}
+\vskip -0.1in
+\end{table}
+
+\subsection{Минимизация энергии}
+В данном эксперименте исследуется алгоритм минимизации энергии основанный на поиске минимального элемента тензора~$\mathbf{E}$. Для поиска минимального элемента тензора, представленного в TT\hyp{}формате, строится диагональная матрица в TT\hyp{}формате которая содержит все элементы исходного тензора на своей диагонали. Затем используется DMRG алгоритм Хоромского и Оселедца~\cite{khoromskij2010dmrg} для поиска минимального собственного значения TT\hyp{}матрицы. Данный метод сравнивается с популярным алгоритмом TRW-S~\cite{kolmogorov06trws} на реальных задачах из бенчмарка OpenGM~\cite{Kappes13comparison}. Часть результатов представлена в таблице~\ref{tbl:map}. Качество алгоритма DMRG сравнимо с качеством TRW-S и существенно выше на большинстве задач из раздела geo-surf-3. Более эффективные алгоритмы минимизации энергии ещё предстоит разработать.
+% \vspace{-0.2cm} In this experiment we evaluate the algorithm of the search of the minimum element in an energy tensor which corresponds to MAP-inference. To find the minimum element of a tensor in the TT-format we construct a diagonal matrix in the TT-format containing all elements of the tensor and use the DMRG algorithm to find its minimal eigenvalue~\cite{khoromskij2010dmrg}. We run the method on several real-world tasks form a recent benchmark~\cite{Kappes13comparison} and compare it against the popular TRW-S algorithm~\cite{kolmogorov06trws}. Some of the results are reported in table~\ref{tbl:map}. The DMRG algorithm shows comparable results and on geo-surf-3 problems almost uniformly outperforms TRW-S.
+% More efficient MAP-inference methods are yet to be developed.\\[-0.8cm]
+
 \section{Реализация алгоритма сжатия нейросетей} \label{sec:exm-code}
 Instead of compressing existing architectures one can use low-rank methods to be able to use much wider hidden layer than was available before. A recent work \cite{Jimmy2014lowRankSNN} shows that it is possible to construct wide and shallow neural networks with performance close to the state-of-the-art deep convolutional neural networks by training a shallow network on the outputs of a trained deep network. They report the improvement of performance with the increase of the hidden layer size and used up to $30\,000$ hidden neurons while restricting the matrix rank of the weight matrix in order to be able able to keep and to update it during the training. Restricting the TT-ranks of the weight matrix allows to use much wider layers that can potentially lead to greater expressive power of the model and we demonstrate it by outperforming other non-convolutional networks on the CIFAR-10 dataset by using several hundreds of thousands of hidden neurons.
+
+\subsection{Свойства ТТ-слоя \label{sec:mnist-shapes}}
+
+В данном эксперименте исследуются свойства ТТ-слоя и сравниваются различиные способы установки его параметра, таких как размерность тензоров представляющих вход и выход ТТ-слоя и ТТ-ранги факторизованной матрицы слоя. Данный эксперимент проводится на датасете распознавания рукописных цифр MNIST~\cite{lecun1998mnist}. Для увеличения количества возможных способов которыми можно представить входную картинку (исходный размер которой $28 \times 28$) в виде многомерного тензора изображения были перемасштабированы в разрешение $32 \times 32$. Для сравнения использовалась нейросеть с одним скрытым слоем нейронов размера 1024 и нелинейностью вида ReLU~\cite{RELU}. Данная сеть достигает тестовой ошибки  $1.9\%$ ($1.6\%$ при обучении с использованием техники дропаут~\cite{dropout}).
+
+Для сравнения были обучены несколько сетей следующей архитектуры: ТТ-слой размера $1024 \times 1024$, нелинейность вида ReLU, полносвязный слой размера $1024 \times 10$. В качестве альтернативного метода сжатия рассматриалась нейросеть в которой вместо ТТ-слоя использовался полносвязный слой матрица которого представлялась и обучалась в низкоранговом формате. Для реализации данного бейзлайна использовалась сеть следующей архитектуры: полносвязный слой размера $1024 \times \rank$ (где $\rank$ это гиперпараметр обозначающий ранг низкорангового формата), полносвязный слой размера $\rank \times 1024$, нелинейность вида ReLU, полносвязный слой размера $1024 \times 10$. Результат данного эксперимента показана на Рис.~\ref{fig:mnist-shape}. Из представленного графика следует, что ТТ-разложение позволяет добиться существенно большего уровня сжатия чем сжатие через низкоранговое разложение при той же точности, и предоставляет больший диапазон выбора баланса между сжатием и точностью.
+
+
+
+\begin{figure}[t]
+  \begin{center}
+  \setlength\figureheight{5.2cm}
+  \setlength\figurewidth{9cm}
+  \input{images/mnist_shapes.tikz}
+  \end{center}
+  \caption{Экспериментальное сравнение свойст сжатия нейросетей при помощи ТТ-разложения на датасете MNIST. На оси Y отложена тестовая ошибка, на оси X число параметров первого слоя нейросети (число элементов ТТ-ядер в случае ТТ-слоя и $2048  \rank$ в случае низкорангового сжатия). Каждая кривая соответсвующая ТТ-разложению отвечает одному из способов представить входной и выходной вектор ТТ-слоя в виде многомерного массива. Числа разеделенные символов  ``$\times$'' обозначает арности каждой из размерностей тензоров входа и выхода. Различные точки принадлижащие одной кривой отличаются ТТ-рангами и матричными рангами соответсвенно. количество параметров в исходном (несжатом) слое равно~$10^6$. \label{fig:mnist-shape}}
+\end{figure}
+
+
+ \subsubsection{Сравнения порядков элементов во входных данных}
+В данном эксперименте сравнивается обучения нейросети с ТТ-слоем на исходных данных датасета MNIST с обучением аналогичной нейросети на данных в которых все пиксели входных картинок случайно перемешаны (при этом случайная перестановка зафиксирована и не меняется во время обучения и тестирования). Используется нейросеть со следующей архитектурой: ТТ-слой размера $1024 \times 15\,625$ и TT-рангом 2, нелинейность вида ReLU, полносвязный слой размера $15\,625 \times 10$. Обучение на исходных данных приводит к тестовой ошибке $1.6$, тогда как обучение на данных после применения случайной перестановки приводит к тестовой ошибке $2.6$. Таким образом, эффективного сжатия ТТ-формат достигает благодаря использования структуры входных данных, которая разрушается при перемешивании порядка пикселей во входной тензоре.
+
+
+\paragraph{Сравнение с работой HashedNet~\cite{chen2015compressing}.} В данном эксперименте рассматривается нейронная сеть с одним скрытым слоем размера $1024$ нейрона в которой оба полносвязных слоя заменяются ТТ-слоями. При установки всех ТТ-рангов в сети в значение 8 была достигнута тестовая ошибка $1.6\%$ при использовании $11\,210$ параметров во всей сети. При установлении ТТ-рангов в значение 6 была досигнута тестовая ошибка $1.9\%$ с использованием $6\,842$ параметров. В работе~\cite{chen2015compressing} при использовании такой же архитектуры были достигнуты следующие результаты при помощи связывания случайных подмножеств весов: сжатие сети в $64$ раза до  $12\,422$ параметров при достижении тестовой ошибки $2.79\%$.\\
+
+\subsection{CIFAR-10}
+Датасет CIFAR-10~\cite{krizhevsky2009Cifar} состоит из цветных изображений размера $32 \times 32$ каждому из которых присвоены один из 10 классов: аэроплан, автомобиль, птица, кошка, олень, собака, лягушка, лошадь, корабль, грузовик. Датасет состоит из  50000 обучающих и 10000 тестовых изображений. Во всех последующих экспериментах в качестве предобработки изображений из них вычитается среднее, выполняется нормализация конраста и предобразования ZCA так же как описано в работе~\cite{goodfellow2013maxout}.
+
+% \subsubsection{Compression}
+Для экспериментов была выбрана сверточная нейронная сеть CIFAR-10 Quick~\cite{snoek2012cifarQuick} состоящия из сверточного слоя, пулинга и нелийности за которыми следуют два полносвязных слоя с нейлинейностями размера  $1024 \times 64$ и $64 \times 10$. Сверточная часть сети в эксперименте была зафиксирована, а полносвязная часть заменена ТТ-слоем размера $1024 \times N$, нелинейностью типа ReLU и полносвязного слоя размера $N \times 10$. Используя $N = 3125$ скрытых нейронов (в исходной сети использовалось $64$) было достигнуто тестовая ошибка $23.13\%$ без дообучения, что превосходит аналогичный показатель исходной сети ($23.25\%$ ошибки). Тензорная размерность входного вектора использовалась $4 \times 4 \times 4 \times 4 \times 4$, а выходного вектора $5 \times 5 \times 5 \times 5 \times 5$. При фиксировании ТТ-рангов в значение 8 ТТ-слой обладает $4160$ настраиваемым параметрам, что соотсвтесвует сжатию всей сети по сравнению с исходной сетью в $1.24$ раза. При замене обоих полносвязных слоев на ТТ-слои доводит тестовую ошибку до $24.39\%$ и приводит к сжатию полносвязной части сети в $11.9$ раз и сжатию всей сети в $1.7$ раз.
+
+Для сравнения, в работе~\cite{Denil2013predicting} полносвязные слои сверточной сети для датасета CIFAR-10 были сжаты не более чем в $4.7$ раз при потере $2\%$ точности.
+
+\subsubsection{Широкая и неглубокая сеть}
+Согласно теореме из работы~\cite{cybenko1989universalApproximator}, нейросети являются универсальными аппроксиматорами, т.е. при достаточном количестве скрытых нейронов нейросеть с одним скрытым слоем способна приблизить любую непрерывную решающую границу. Обычно сети достаточно широкие чтобы подойти к границы применимости данной теоремы не используются на практике, так как требует высоких вычислительных затрат, большого объема памяти и могут приводить к переобучению из-за слишком большого количества настраиваемых параметров. Использование широких ТТ-слоев потенциально может исправить все три озвученные проблемы. В данном эксперименте используется нейросеть с двумя скрытыми слоями следующей архитектуры: ТТ-слой размера $3072 \times 262\,144$, нелинейность типа ReLU, ТТ-слой размера $262\,144 \times 4\,096$, нелинейность типа ReLU, полносвязный слой размера $4\,096 \times 10$. Такая нейронная сеть достигает тестовой ошибки в $31.47\%$, что делает ее одной из лучших в классе полносвязных сетей для датасета CIFAR-10.
+
+\begin{table}
+    \begin{center}
+    \begin{tabular}{ l@{\;}|@{\;}c@{\;}|@{\;}c@{\;}|@{\;}c@{\;}|@{\;}c@{\;}|@{\;}c@{\;}|@{\;}c@{\;}|@{\;}c@{\;} }
+    % \hline
+    Архитектура &
+    \parbox{2cm}{Сжатие \\ ТТ-слоев} &
+    \parbox{1.5cm}{Cжатие \\ vgg-16} &
+    \parbox{1.5cm}{Cжатие \\ vgg-19} &
+    \parbox{1.5cm}{Топ 1 \\ vgg-16} &
+    \parbox{1.5cm}{Топ 5 \\ vgg-16} &
+    \parbox{1.5cm}{Топ 1 \\ vgg-19} &
+    \parbox{1.5cm}{Топ 5 \\ vgg-16} \rule{0pt}{1.0\normalbaselineskip} \\ \hline
+    FC FC FC \rule{0pt}{1.0\normalbaselineskip}     & $1$ &  $1$ & $1.0$ & $30.9$ &  $11.2$ & $29.0$ & $10.1$  \\ % \hline
+    TT4 FC FC    & $50\,972$ & $3.9$ & $3.5$ & $31.2$ & $11.2$ & $29.8$ & $10.4$ \\ % \hline % 2016 params vs 25088 \times 4096
+    TT2 FC FC    & $194\,622$ & $3.9$ & --  & $31.5$ & $11.5$ & -- & -- \\ % \hline % 528 params vs 25088 \times 4096
+    TT1 FC FC    & $713\,614$ & $3.9$ & --  & $33.3$ & $12.8$ & -- & -- \\ % \hline % 144 params vs 25088 \times 4096
+    TT4 TT4 FC    & $37\,732$ & $7.4$ & -- & $32.2$ & $12.3$ & -- & -- \\ % \hline % 1152 params vs 4096 \times 4096
+    LR1 FC FC    & $3\,521$ & $3.9$ & -- & $99.5$ & $97.6$ & -- & -- \\ % \hline % 1152 params vs 4096 \times 4096
+    LR5 FC FC    & $704$ & $3.9$ & $3.5$ & $81.7$ & $53.9$ & $79.1$ & $52.4$ \\ % \hline % 1152 params vs 4096 \times 4096
+    LR50 FC FC    & $70$ & $3.7$ & $3.4$ & $36.7$ & $14.9$ & $34.5$ & $15.8$ \\ % \hline % 1152 params vs 4096 \times 4096
+    \end{tabular}
+    \end{center}
+    \caption{Сжатие полносвязных слоев сверточных сетей  vgg-16 и vgg-19 на датасете ImageNet. Каждая строчка означает архитектуру последних трех слоев сети, ``FC'' означает (несжатый) полносвязный слой; TT$\square$ означает ТТ-слой с ТТ-рангом равным числу  ``$\square$'' указанному рядом; LR$\square$ означает полносвязный слой с матрицей представленный в низкоранговом формате с рангом ``$\square$''. Во второй колонке указан уровень сжатия тех слоев которые сжимались в данной архитектуре, в третей и четвертой колонке сжатие всей сети. В колонках номер 5-8 указаны топ 1 ошибка (ошибка классификации) и топ 5 ошибка (количество тестовых примерых на которых правильный ответ попал в первые 5 кандидатов предложенных нейросетью) \label{tbl:imagenet-vgg-layer}}
+\end{table}
+% Convolutional part params: 14714688 in vgg-16, 20024384 in vgg-19
+% fc part: 123642856
+
+\subsection{ImageNet}
+В данном эксперименте исследуется способность ТТ-слоя к сжатию нейросетей обученных на больших объемах данных. Рассматривается датасет ImageNet ILSVRC-2012 dataset~\cite{Russakovsky2015ImageNet} который состоит из 1.2 миллиона обучающих изображений и 50000 валидационных изображений, каждое из которых отнесено к одному из 1000 классов. В качестве базовых моделей используются сверточные нейросети vgg-16 и vgg-19~\cite{simonyan15}. Обе нейросети состоят из двух частей: сверточной и полносвязной. В обоих сетях полносвязныя часть состоит из трех полносвязных слоев размеров $25088 \times 4096$, $4096 \times 4096$ и $4096 \times 1000$.
+
+Сначала, в обоих сетях первый полносвязный слой был заменен на ТТ-слой у которого входной вектор длины $25088$ был преобразован в тензор размера $2 \times 7 \times 8 \times 8 \times 7 \times 4$, а выходной вектор длины $4096$ был преобразован в тензор размера $4 \times 4 \times 4 \times 4 \times 4 \times 4$. Оставшиеся два полносвязных слоя были случайно переинициализорваны и обучены с нуля. Параметры сверточной части сетей были зафиксированы во время обучения в значения найденные в работе~\cite{Russakovsky2015ImageNet}. Ошибка на валидационном множестве и сжатия относительно исходной версии сетей для разных значений ТТ-рангов приведены в Тбл.~\ref{tbl:imagenet-vgg-layer}. При использовании ТТ-ранга 2 это приводит к сжатию матрицы самого большого полносвязного слоя сети в $194\,622$ раз ($25088 \times 4096$ параметров в исходной матрице и $528$ параметров в ТТ-матрице) и при этом увеличить топ 5 ошибку сети с $11.2$ до $11.5$. Это приводит к сжатию всей сети в 3.9 раз. В следующем эксперименте сжатию подвергаются также и второй полносвязный слой сетей, что приводит к сжатию всей сети в 7.4 раза.
+
+В качестве бейзлайна рассматривается сжатие первого полносвязного слоя при помощи ограничения матричного ранга матрицы слоя~\cite{Jimmy2014lowRankSNN}, что приводит к существенному снижению точности даже при использовании относительно высокого ранга 50 (ошибка увеличивается с 11.2 до 14.9). В другом методе сжатия нейросетей~\cite{yang2014deep} было получено сжатие сети в 2-3 раза без увеличения ошибка классификации, однако в их работе использовалась другая архитектура базовой сети~\cite{Krizhevsky2012AlexNet}, так что результаты не сравнимы напрямую.
+
+% We use deep convolutional neural networks vgg-16 and vgg-19~\cite{simonyan15} as reference models\footnote{After we started to experiment on the vgg-16 network the vgg-* networks improved and thus we report the results on a slightly outdated version of vgg-16 and modern version of vgg-19.}. The networks consist of two parts: the convolutional (the first layers) and the fully-connected part (the remaining layers). For both networks the second part consist of $3$ fully-connected layers of sizes $25088 \times 4096$, $4096 \times 4096$ and $4096 \times 1000$. We reshape $25088$-dimensional vectors to $2 \times 7 \times 8 \times 8 \times 7 \times 4$ tensors $\texttt{Alex: need to comment why this unbalances shape.}$ and $4096$-dimensional vectors to $4 \times 4 \times 4 \times 4 \times 4 \times 4$ tensors.
+
+% We fix the convolutional part to the values obtained from vgg-* training and train one TT-layer followed by two fully-connected layers from a random initialization. Then we fix the TT-layer, substitute the second fully-connected layer with a TT-layer, and train the last two layers (TT-layer and remaining fully-connected layer) starting from random initialization of their weights.
+
+
+% We reduce the number of parameters in the largest fully-connected layer matrix by the factor of $194\,622$ (from $25088 \times 4096$ parameters to $528$) while increasing the top 1 error from $30.9$ to $31.54$. By compressing one (two) layers we reduce the number of parameters in the whole network by the factor of $3.9$ ($7.3$), see Table~\ref{tbl:imagenet-vgg-layer}. As a baseline we consider restricting matrix rank of the weight matrices (as in sec.~\ref{sec:mnist-shapes}). The accuracy and the compression rates for TensorNet are significantly better compared to the matrix rank baseline. Surprisingly even the TT-rank $1$ model outperforms all the matrix rank baselines.
+%Even without fine-tuning our model can achieve higher compression rates with less relative accuracy decrease, especially when comparing the fully-connected part compression (tbl.~\ref{tbl:fastfood}).
+
+% \begin{table}
+%     \begin{center}
+%     \begin{tabular}{ l | l | l | l | l | l}
+%     % \hline
+%     Model & fc part compression & whole compression & error before & error after & relative difference \rule{0pt}{1.0\normalbaselineskip}\\ \hline
+%     Fastfood-16-AD & $3.6$ & $3.6$ & $42.59\%$ & $45.30\%$ & $+6.4\%$ \rule{0pt}{1.0\normalbaselineskip} \\ % \hline
+%     Fastfood-32-AD & $1.8$ & $1.8$ & $42.59\%$ & $43.77\%$ & $+2.8\%$ \\ % \hline
+%     Fastfood-16-AD + finetuning & $3.6$ & $3.6$ & $42.59\%$ & $42.90\%$ & $+0.7\%$ \\ % \hline
+%     Fastfood-32-AD + finetuning & $1.8$ & $1.8$ & $42.59\%$ & $41.93\%$ & $-1.5\%$ \\ % \hline
+%     tt4 fc fc & $5.9$ & $3.9$ & $30.9\%$ & $31.2\%$ & $+1\%$ \\ % \hline
+%     tt4 tt4 fc & $\boldsymbol{30}$ & $\boldsymbol{7.4}$ & $30.9\%$ & $32.2\%$ & $+4.2\%$ \\ % \hline
+%     \end{tabular}
+%     \end{center}
+%     \caption{Comparison with Fastfood networks~\cite{yang2014deep}. The reference convnet of the Fastfood method contains more than $99.9\%$ of parameters in the fully-connected part, so for their model the compression rates for the fully-connected part and for the whole network are roughly the same.\label{tbl:fastfood}}
+% \end{table}
+
+
+% On the forward pass the TT-layer is up to $13$ times faster than the fully-connected analog~(Table~\ref{tbl:imegenet-inference}). Note that the TT code is written in MATLAB while the fully-connected layer is implemented in C and CUDA.
+\begin{table}
+    \begin{center}
+    \begin{tabular}{l| l l}
+    Type & 1 im. time (s$/100$) & 100 im. time (s$/100$) \rule{0pt}{1.0\normalbaselineskip}\\ \hline
+    CPU fully-connected layer   & $1.609$ & $9.72$ \rule{0pt}{1.0\normalbaselineskip}\\
+    CPU TT-layer   & $0.124$ & $9.47$\\
+    GPU fully-connected layer   & $0.27$ & $3.3$\\
+    GPU TT-layer   & $0.192$ & $1.286$\\
+    \end{tabular}
+    \end{center}
+    \caption{Inference time for the $25088 \times 4096$ fully-connected layer and its corresponding TT-layer with all the TT-ranks equal $4$. The memory usage for feeding forward one image is $392$MB for the fully-connected layer and $0.766$MB for the TT-layer. \label{tbl:imegenet-inference} \vspace{-0.5cm}}
+\end{table}
+% CPU:
+% TT small: 0.001226 0.001240 0.001258, mean 0.001243 +- 0.000020
+% Conv small: 0.016052 0.016072 0.016109, mean 0.016094 +- 0.000077
+% FC small: 0.111983 0.112402 0.112718, mean 0.112417 +- 0.000563
+% TT big: 0.094254 0.094626 0.094908, mean 0.094658 +- 0.000527
+% Conv big: 0.096744 0.097039 0.097399, mean 0.097159 +- 0.000791
+% FC big: 0.197489 0.197676 0.198054, mean 0.197895 +- 0.000838
+% GPU:
+% TT small: 0.001912 0.001916 0.001923, mean 0.001924 +- 0.000047
+% Conv small: 0.002680 0.002684 0.002690, mean 0.002697 +- 0.000124
+% FC small: 0.009794 0.009796 0.009801, mean 0.009802 +- 0.000052
+% TT big: 0.012849 0.012854 0.012860, mean 0.012863 +- 0.000081
+% Conv big: 0.032895 0.032934 0.033011, mean 0.032957 +- 0.000124
+% FC big: 0.035456 0.035477 0.035502, mean 0.035482 +- 0.000037
+
+%\subsection{Implementation details}
+%In all experiments we use our MATLAB extension to the MatConvNet framework~\cite{matconvnet}. For operations related to the TT-format we use the TT-Toolbox%\footnote{\url{https://github.com/oseledets/TT-Toolbox}}
+%implemented in MATLAB as well. The experiments were performed on a computer with a quad-core Intel Core i5-4460 CPU, 16 GB RAM and a single NVidia Geforce GTX 980 GPU.
+%We report the running times and the memory usage at the forward pass of the TT-layer and the baseline fully-connected layer in Table~\ref{tbl:imegenet-inference}.
+
+% TODO: say what was the learning procedure? weight decay, learning rate, momentum, etc
+
+% Multiplying one TT-core by a positive constant and dividing another TT-core by the same constant does not change the elements of matrix $\mat{W}$ (see eq.~\ref{eq:TT-layer-output-detailed}) leading to ambiguity in TT-representation.
+We use L$2$-regularization term for the TT-cores elements with $\lambda = 0.0005$ to prevent ambiguities in the TT-format. To initialize all the parameters (the elements of the TT-cores for TT-layers and the weight matrices for fully-connected layers) we use Gaussian noise. We train TensorNets with stochastic gradient descent with momentum (with coefficient $0.9$) and tune the learning rate by hand on the validation set.
+
+
 \section{??Реализация тензорных полиномиальных моделей} \label{sec:nn-code}
