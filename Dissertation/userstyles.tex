@@ -337,9 +337,12 @@
 \DeclareMathOperator{\ttround}{TT-round}
 % \DeclareMathOperator{\grad}{grad}
 \renewcommand{\vec}[1]{\boldsymbol{#1}}
+\newcommand{\mat}[1]{\boldsymbol{#1}}
 \newcommand{\tens}[1]{\boldsymbol{\mathcal{#1}}}
 \newcommand{\tensel}[1]{\mathcal{#1}}
 \newcommand{\alert}[1]{\textbf{#1}}
+
+\newcommand{\compl}{\mathcal{O}}
 
 
 \newcommand{\includesvg}[1]{
@@ -392,3 +395,51 @@
 \renewcommand{\listalgorithmname}{Список алгоритмов}
 \floatname{algorithm}{Алгоритм}
 \floatplacement{algorithm}{!t}
+
+% SVG
+\graphicspath{{figures/}}
+\newcommand{\executeiffilenewer}[3]{%
+  \ifnum\pdfstrcmp{\pdffilemoddate{#1}}%
+  {\pdffilemoddate{#2}} > 0 {\immediate\write18{#3}}\fi}
+%\newcommand{\fancyincludesvg}[1]{%
+%  \executeiffilenewer{#1.svg}{#1.pdf}%
+%  {inkscape -z -D --file=#1.svg %
+%   --export-pdf=#1.pdf --export-latex}%
+%  \input{#1.pdf_tex}%
+%}
+
+
+\usepackage{eqparbox}
+\renewcommand{\algorithmiccomment}[1]{\hfill\eqparbox{COMMENT}{\# #1}}
+
+\usepackage{pgfplots}
+\usetikzlibrary{plotmarks}
+\usetikzlibrary{backgrounds}
+% Global figure properties
+\newlength\figureheight
+\newlength\figurewidth
+\setlength\figureheight{4cm}
+\setlength\figurewidth{6cm}
+\pgfplotsset{
+  /tikz/font = \scriptsize,
+  compat = newest,
+  tick align = outside,
+  xminorticks = false,
+  yminorticks = false,
+  xlabel style = {yshift = -0.1cm},
+  ylabel style = {yshift = 0.1cm},
+  xticklabel style = {yshift = -0.05cm},
+  tick pos = left,
+  every axis plot/.append style = {line width = 1pt, mark size = 0.8pt},
+  axis line style = {semithick},
+  legend style = {semithick},
+  legend image post style={mark size=1.5pt},
+  tick style = {semithick, color = black},
+  label style = {font = \normalsize},
+}
+\tikzset{
+  every picture/.append style = {tight background}
+}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
