@@ -172,7 +172,7 @@ f = G_1^f \ldots G_d^f
 %
 \begin{algorithm}[tb]
    \caption{Вычисление скалярного произведения $f = b^\intercal A c$ за $\compl(r_A r_c r_b n d (r_b + r_A n + r_c))$ арифметический операций}
-   \label{alg:quadratic-form}
+   \label{alg:bilinear-form}
 \begin{algorithmic}[1]
    \REQUIRE факторы ТТ-матрицы $\mat{A}$ и ТТ-векторов $\vec{b}$ и $\vec{c}$
    \ENSURE $f = b^\intercal A c$
@@ -205,8 +205,8 @@ f = G_1^f \ldots G_d^f
 По аналогии с вычислением вектора билинейных форм, алгоритм~\ref{alg:quadratic-form} можно адаптировать чтобы  вычислить матрицу попарных билинейных форм заданную как $G_{i,j} = b_i^\intercal A c_j$ для матрицы $A$ и батчей TT-векторов $b$ и $c$ параллельно по размеру батчей (см. Алг.~\ref{alg:pairwise-bilinear-form}). В библиотеке T3F данная операция доступна в виде функции \texttt{t3f.gram\_matrix(b, A)}.
 
 \begin{algorithm}[tb]
-   \caption{Вычисление матрицы попарных билинейных форм $G_{i,j} = b_i^\intercal A c_j$ за $\compl(B_b B_c \text{batch\_size}_c r_A r_c r_b n d (r_b + r_A n + r_c))$ арифметический операций, где $B_b$ и $B_c$ это размеры батчей ТТ-векторов $b$ и $c$ соответсвенно. Красным выделены отличия от Алг.~\ref{alg:pairwise-bilinear-form}}
-   \label{alg:quadratic-form}
+   \caption{Вычисление матрицы попарных билинейных форм $G_{i,j} = b_i^\intercal A c_j$ за $\compl(B_b B_c \text{batch\_size}_c r_A r_c r_b n d (r_b + r_A n + r_c))$ арифметический операций, где $B_b$ и $B_c$ это размеры батчей ТТ-векторов $b$ и $c$ соответсвенно. Красным выделены отличия от Алг.~\ref{alg:bilinear-form}}
+   \label{alg:pairwise-bilinear-form}
 \begin{algorithmic}[1]
    \REQUIRE факторы ТТ-матрицы $\mat{A}$ и ТТ-векторов $\vec{b}$ и $\vec{c}$
    \ENSURE $G_{i,j} = b_i^\intercal A c_j$
@@ -403,16 +403,11 @@ $$
 
 В первом эксперименте метод, основанный на TT\hyp{}разложении (TT), сравнивается со следующими методами из библиотеки LibDAI~\cite{mooij10libdai}: Belief Propagation (BP)~\cite{kschischang01bp}, Tree Expectation Propagation (TREEEP)~\cite{minka04treeep}, и методом Mean Field (MF)~\cite{wainwright08gm}. Так же проводится сравнение с методом annealed importance sampling method (AIS)~\cite{neal01ais} --- представителем методов MCMC. Результаты представлены на рис.~\ref{fig:zExperiments}a. Рассматривается набор моделей Изинга с 4-х связной решеткой размера $10 \times 10$, где унарные веса $h_i$ сгенерированы из равномерного распределения $U[-1, 1]$, все парные веса $c_{ij}$ равны 1, температура $T$ меняется в пределах от $10^{-1}$ до $10^{3}$. Для каждого значения температуры сгенерировано 50 моделей Изинга и указана медиана и верхняя и нижняя квартили абсолютной ошибки оценки логарифма нормировочной константы. Для метода AIS были выбраны параметры (1000 промежуточных распределений с выборкой размером 70), максимизирующие точность, достигнутую за 60 секунд. Для подсчета правильных ответов был использован метод junction tree~\cite{wainwright08gm}.
 
-% \vspace{-0.1cm} First we compare our method (TT) against the following methods implemeted in the LibDAI system~\cite{mooij10libdai}: Belief Propagation (BP)~\cite{kschischang01bp}, Tree Expectation Propagation (TREEEP)~\cite{minka04treeep}, and the Mean Field method (MF)~\cite{wainwright08gm}. In addition we compare against the annealed importance sampling method (AIS)~\cite{neal01ais} as a representative of the family of MCMC methods. The results are shown in plot~\ref{fig:zExperiments}a. For AIS method we've selected parameters (1000 intermidiate distribution, 70 samples each) to maximize the accuracy achieved within 60 seconds per model. The groundtruth values are computed using the junction tree algorithm. We report the average value ($\pm$ one standard deviation) of the absolute error of the logarithm of the computed partition functions.
-
-
 Во втором эксперименте проводится сравнение с недавно предложенным методом WISH на данных из оригинальной статьи Ермона и др.~\cite{ermon13wish}. Ермон рассматривал набор моделей Изинга с решеткой размера $10 \times 10$, унарными весами $h_i$ сгенерированными из равномерного распределения $U[-1, 1]$, температурой $T$ равной 1, и парными весами $c_{ij}$ сгенерированными из равномерного распределения $U[-f, f]$, где параметр $f$ меняется от $0.25$ до $3$. Результаты сравнения представлены на рис.~\ref{fig:zExperiments}b. Отметим, что метод WISH запускался на кластере и каждое вычислительное ядро работало не менее 15 минут. Наш неоптимизированый Matlab код работал не более 53 секунд на каждом примере (32 секунды в среднем).
 
-% \vspace{-0.1cm} In the second experiment we compare our method with the recently proposed WISH method~\cite{ermon13wish} on a dataset taken form their paper. The results of the comparison are presented in plot~\ref{fig:zExperiments}b. Note, that the WISH system is computationally very heavy and for this particular dataset it was run on a computational cluster for at least 15 minutes on each core. Our non-optimized MATLAB code worked at most 60 seconds on each example.
 
 На рис.~\ref{fig:zConf} изображен доверительный интервал, полученный путем оценивания результата теоремы~\ref{main-theorem} неравенством~\eqref{eq:l2computing}.
 
-% \vspace{-0.1cm} Finally, fig.~\ref{fig:zConf} presents the confidence bounds obtained by upper-bounding the result of theorem~\ref{main-theorem} using eq.~\eqref{eq:l2computing} and taking the logarithm of the inequality.\\[-0.8cm]
 
 \begin{figure}
 \begin{center}
