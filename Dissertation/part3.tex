@@ -115,10 +115,10 @@ The presented algorithm reduces to a sequence of matrix-by-matrix products and p
 Сложность $O(d r^2 n \max\{m, n\}^d) = O(d r^2 n \max\{M, N\})$.
 
 \section{Альтернативная модель рекурентных нейронных сетей}
-Хочется обучать сети быстро, предлагается модель обучаемая Риманом.
+В данном разделе предлагается модель рекурентной нейросети параметризующаяся едниственным тензором в ТТ-формате. Так как множество тензоров фиксированного ТТ-ранга образует гладкое многообразие, такую модель становится возможным обучать с помощью римановой оптимизации, что позволяет ускорить обучение по сравнению с обычными методами оптимизации нейросетей такими как стохастический градиентный спуск.
 
 \subsection{Предлагаемая модель}
-Before introducing our model equation in the general case, consider a $3$-dimensional example. The equation includes one term per each subset of features (each interaction)
+Перед тем как ввести предлагамую модель в общем виде, рассмотрим частный случай когда объекты обучающей выборки описываются $3$ признаками. Предлагаемая модель представляет собой полином который включает по одному слагаемому для каждого подмножества признаков и в случае $3$-х мерных объектов выглядит следующим образом
 \begin{equation}
 \label{eq:polynomial-model-example}
 \begin{aligned}
@@ -127,45 +127,35 @@ Before introducing our model equation in the general case, consider a $3$-dimens
 &+ \tensel{W}_{111} \,\, x_1 x_2 x_3.
 \end{aligned}
 \end{equation}
-Note that all permutations of features in a term (e.g. $x_1 x_2$ and $x_2 x_1$) correspond to a single term and have exactly one associated weight (e.g. $\tensel{W}_{110}$).
+Обратите внимание, что все перестановки признаков в каждом слагаемом (например $x_1 x_2$ и $x_2 x_1$) соответсвуют лишь одному слагаемому с одним настраиваемым весом (например $\tensel{W}_{110}$).
 
-In the general case, we enumerate the subsets of features with a binary vector $(i_1, \ldots, i_d)$, where $i_k = 1$ if the $k$-th feature belongs to the subset. The model equation looks as follows
+В общем случае, подмножества признаков индексируются $d$-мерным бинарным вектором $(i_1, \ldots, i_d)$, где $i_k = 1$ тогда и только тогда когда $k$-ый признак принадлежит данному подмножеству. Используя данные обозначение, уравнение задающее модель в общем виде записывается следующим образом
 \begin{equation}
 \label{eq:polynomial-model}
 \widehat{y}(\vec{x}) = \sum_{i_1=0}^1 \ldots \sum_{i_d=0}^1 \tensel{W}_{i_1 \ldots i_d} \prod_{k=1}^d x_k^{i_k}.
 \end{equation}
-Here we assume that $0^0 = 1$.
-The model is parametrized by a $d$-dimensional tensor $\tens{W}$, which consists of $2^d$ elements.
+В данных обозначениях подразумевается что $0^0 = 1$.
+Таким образом, модель параметризуется $d$-мерным тензором~$\tens{W}$ состоящем из $2^d$ элементов.
 
-The model equation~\eqref{eq:polynomial-model} is linear with respect to the weight tensor $\tens{W}$.
-To emphasize this fact and simplify the notation we rewrite the model equation~\eqref{eq:polynomial-model} as a tensor dot product $\widehat{y}(\vec{x}) = \langle \tens{X}, \tens{W} \rangle$, where the tensor $\tens{X}$ is defined as follows
+Обратите внимание, что уравнение модели линейно относительно тензора параметров $\tens{W}$. Чтобы подчеркнуть этот факт уравнение~\eqref{eq:polynomial-model} можно переписать через скалярное произведение тензоров $\widehat{y}(\vec{x}) = \langle \tens{X}, \tens{W} \rangle$, где тензор $\tens{X}$ определяется следующим образом
 \begin{equation}
 \label{eq:X-definition}
 \tensel{X}_{i_1 \ldots i_d} = \prod_{k=1}^d x_k^{i_k}.
 \end{equation}
-Note that there is no need in a separate bias term, since it is already included in the model as the weight tensor element~$\tensel{W}_{0 \ldots 0}$ (see the model equation example~\eqref{eq:polynomial-model-example}).
-
-The key idea of our method is to compactly represent the exponentially large tensor of parameters $\tens{W}$ in the Tensor Train format~\cite{oseledets2011ttMain}.
+Обратите внимание, что в отличие от линейной модели~\eqref{eq:linear-model} в уравнение~\eqref{eq:polynomial-model} не требуется отдельный параметр сдвига $b$, так как сдвиг уже включен в модель в виде параметра~$\tensel{W}_{0 \ldots 0}$ (смотри пример уравнения модели~\eqref{eq:polynomial-model-example}).
+Основная идея предлагаемой модели состоит в компактном представлении экспоненциально большого тензора параметров~$\tens{W}$ в ТТ-формате.
 
 \subsection{Быстрый метод вывода}
-In this section, we return to the model proposed in Sec.~\ref{sec:the-model} and show how to compute the model equation~\eqref{eq:polynomial-model} in linear time.
-To avoid the exponential complexity, we represent the weight tensor~$\tens{W}$ and the data tensor~$\tens{X}$~\eqref{eq:X-definition} in the TT-format.
-The TT-ranks of these tensors determine the efficiency of the scheme.
-During the learning, we initialize and optimize the tensor $\tens{W}$ in the TT-format and explicitly control its TT-rank.
-The TT-rank of the tensor $\tens{X}$ always equals 1. Indeed, the following TT-cores give the exact representation of the tensor~$\tens{X}$
+В данном разделе показывается как вычислять уравнение модели~\eqref{eq:polynomial-model} за линейное число вычислительных операций от числа признаков $d$. Линейная сложность достигается благодаря ТТ-представлению тензора параметров~$\tens{W}$ и тензора объекта~$\tens{X}$~\eqref{eq:X-definition} в ТТ-формате с низкими рангами. 
+Во время обучения тензор параметров~$\tens{W}$ обучается и инициализируется в ТТ-формате и его ТТ-ранг можно контролировать напрямую. В самом деле, следующие ТТ-ядра дают точное представление тензора~$\tens{X}$
 \begin{equation*}
 G_k[i_k] = x_k^{i_k} \in \mathbb{R}^{1 \times 1}, ~~ k=1, \ldots, d.
 \end{equation*}
-The $k$-th core $G_k[i_k]$ is a $1 \times 1$ matrix for any value of $i_k \in \{0, 1\}$, hence the TT-rank of the tensor $\tens{X}$ equals~$1$.
+Так как $k$-ое ядро $G_k[i_k]$ представимо в виде матрицы размера $1 \times 1$ для любого значения индекса $i_k \in \{0, 1\}$, следовательно ТТ-ранг тензора~$\tens{X}$ равняется~$1$.
 
-Now that we have TT-representations of tensors $\tens{W}$ and $\tens{X}$, we can compute the model response $\widehat{y}(\vec{x}) = \langle \tens{X}, \tens{W} \rangle$ in linear time with respect to the number of features $d$.
-\begin{theorem}
-\label{thm:inference-time}
-The computational complexity of computing the model response~$\widehat{y}(\vec{x})$ is $O(\rank^2 d)$, where $\rank$ is the TT-rank of the weight tensor~$\tens{W}$.
-\end{theorem}
+Как было показано в работе~\cite{oseledets2011ttMain}, скалярное произведение между двумя ТТ-тензорами с рангами $\rank$ и $1$ и размером каждой оси $2$ можно вычислить за время пропорциональное~$O(\rank^2 d)$. Покажем применение этого общего принципа для модели~\eqref{eq:polynomial-model}, так как в данном частном случае оно приводит к простым и элегентным формулам.
 
-\begin{proof}
-  Let us rewrite the definition of the model response~\eqref{eq:polynomial-model} assuming that the weight tensor $\tens{W}$ is represented in the TT-format~\eqref{eq:TT-format}
+Перепишем уравнение модели~\eqref{eq:polynomial-model} предполагая что тензор $\tens{W}$ представлен в ТТ-формате.
 \begin{equation*}
 \begin{aligned}
 \widehat{y}(\vec{x}) &= \sum_{i_1, \ldots, i_d} \tensel{W}_{i_1 \ldots i_d} \, \left ( \prod_{k=1}^d x_k^{i_k} \right )\\
@@ -173,7 +163,7 @@ The computational complexity of computing the model response~$\widehat{y}(\vec{x
 \end{aligned}
 \end{equation*}
 
-Let us group the factors that depend on the variable $i_k$, $k=1, \ldots, d$
+Сгруппируем множители зависящие от переменной $i_k$, $k=1, \ldots, d$
 \begin{equation*}
 %\label{eq:fast-model-equation}
 \begin{aligned}
@@ -182,22 +172,14 @@ Let us group the factors that depend on the variable $i_k$, $k=1, \ldots, d$
 &= \underbrace{A_1}_{1 \times \rank} \underbrace{A_2}_{\rank \times \rank} \ldots \underbrace{A_d}_{\rank \times 1},
 \end{aligned}
 \end{equation*}
-where the matrices $A_k$ for $k=1, \ldots, d$ are defined as follows
+где матрицы $A_k$ для $k=1, \ldots, d$ определены следующим образом
 \begin{equation*}
 A_k = \sum_{i_k=0}^1 x_k^{i_k} G_k[i_k] = G_k[0] + x_k G_k[1].
 \end{equation*}
-The final value $\widehat{y}(\vec{x})$ can be computed from the matrices~$A_k$ via $d-1$ matrix-by-vector multiplications and $1$ vector-by-vector multiplication, which yields $O(r^2 d)$ complexity.
+Итоговое значение $\widehat{y}(\vec{x})$ может быть вычислено с помощью $d-1$ матрично-векторных произведений и одного скалярного произведения векторов, что приводит к асимптотической сложности $O(r^2 d)$.
 
-Note that the proof is constructive and corresponds to the implementation of the inference algorithm.
-\end{proof}
-
-
-The TT-rank of the weight tensor $\tens{W}$ is a hyper-parameter of our method and it controls the efficiency vs. flexibility trade-off.
-A small TT-rank regularizes the model and yields fast learning and inference but restricts the set of possible tensors~$\tens{W}$.
-A sufficiently large TT-rank allows any value of the tensor~$\tens{W}$ and effectively leaves us with the full polynomial model without any advantages of the TT-format.
-
-\subsection{Метод обучения}
-Learning the parameters of the proposed model corresponds to minimizing the loss under the TT-rank constraint:
+\subsection{Методы обучения}
+Обучение модели~\eqref{eq:polynomial-model} соответсвует минимизации следующей (регуляризованной) функции потерь с ограничение на ТТ-ранг тензора параметров
 \begin{equation}
 \label{eq:TT-loss-minimization}
 \begin{aligned}
@@ -207,41 +189,35 @@ Learning the parameters of the proposed model corresponds to minimizing the loss
 & & \ttrank(\tens{W}) = r_0,
 \end{aligned}
 \end{equation}
-where the loss is defined as follows
+где функция потерь задана следующим образом
 \begin{equation}
 \label{eq:TT-loss}
 L(\tens{W}) = \sum_{f=1}^N \ell\left(\langle \tens{X}^{(f)}, \tens{W} \rangle,\, y^{(f)}\right) + \frac{\lambda}{2} \norm{\tens{W}}^2_F.
 \end{equation}
 
-Here by the Frobenius norm $\| \cdot \|_F$ we mean the square root of sum of squares of the elements
-\begin{equation*}
-\norm{\tens{W}}^2_F = \sum_{i_1=0}^1 \ldots \sum_{i_d=0}^1 \tensel{W}^2_{i_1 \ldots i_d}.
-\end{equation*}
+Рассмотрим два подхода к решению оптимизационной задачи~\eqref{eq:TT-loss-minimization}.
+В качестве базового подхода, будем минимизировать функцию $L(\tens{W})$ стохастическим градиентным спуском примененнным к параметрам задающим ТТ-представление тензора $\tens{W}$ (элементам ТТ-ядер).
 
-We consider two approaches to solve problem~\eqref{eq:TT-loss-minimization}.
-In a baseline approach, we optimize the objective $L(\tens{W})$ with the stochastic gradient descent applied to the underlying parameters of the TT-format of the tensor $\tens{W}$.
+В качестве альтернативного подхода можно было бы рассмотреть (стохастический) градиентный спуск примененный к самому тензору~$\tens{W}$. В рамках такого подхода на каждой итерации следовало бы вычитать из градиент функции потерь из текущего значения $\tens{W}$. ТТ-формат дейтствительно позволяет вычитать тензоры, но это приводит к росту ТТ-рангов на каждой итерации, а операция ТТ-округления для контроля роста рангов имеет сложность кубическую по рангу. Как будет показано далее, ТТ-ранг градиента функции потерь пропорционален число объектов обучающей выборки рассматриваемых на данной итерации, и может достигать сотен, что делает такой подход непрактичным.
 
-An alternative to the baseline is to perform gradient descent with respect to the tensor $\tens{W}$, that is subtract the  gradient from the current estimate of $\tens{W}$ on each iteration.
-The TT-format indeed allows to subtract tensors, but this operation increases the TT-rank on each iteration, making this approach impractical.
+Для получения более эфективного метода оптимизации далее в этом разделе будет рассмотрен метод римановой оптимизации 
+Экспериментально преимещуство римановой оптимизации над стохастическим граиентным спуском для данной задачи показано в разделе~\ref{sec:exp-riemannian-optimization}.
 
-To improve upon the baseline and avoid the TT-rank growth, we exploit the geometry of the set of tensors that satisfy the TT-rank constraint~\eqref{eq:TT-loss-minimization} to build a Riemannian optimization procedure (Sec.~\ref{sec:riemannian-optimization}).
-We experimentally show the advantage of this approach over the baseline in Sec.~\ref{sec:exp-riemannian-optimization}.
-
-\subsubsection{Riemannian optimization \label{sec:riemannian-optimization}}
-The set of all $d$-dimensional tensors with fixed TT-rank $\rank$
+\subsubsection{риманова оптимизация\label{sec:exm-riemannian-optimization}}
+Множество $d$-мерных тензоров фиксированного размера и с фиксированными ТТ-рангами $\rank$
 \begin{equation*}
 % \label{eq:TT-manifold}
 \mathcal{M}_r = \{\tens{W} \in \mathbb{R}^{2 \times  \ldots \times 2}\!:\, \ttrank(\tens{W})=\rank\}
 \end{equation*}
-forms a Riemannian manifold~\cite{holtz2012manifolds}.
-This observation allows us to use Riemannian optimization to solve problem~\eqref{eq:TT-loss-minimization}.
-Riemannian gradient descent consists of the following steps which are repeated until convergence (see Fig.~\ref{fig:riemannian-illustration} for an illustration):
+образует гладкое многообразие~\cite{holtz2012manifolds}.
+Это свойство позволяет нам использоват аппарат римановой оптимизации для решение задачи~\eqref{eq:TT-loss-minimization}.
+Метод риманового градиентного спуска состоит из следующих шагов повторяемых до сходимости (см Рис.~\ref{fig:riemannian-illustration}):
 \begin{enumerate}
-\item Project the gradient $\frac{\partial L}{\partial \tens{W}}$ on the tangent space of $\mathcal{M}_r$ taken at the point $\tens{W}$. We denote the tangent space as $T_{\tens{W}} \mathcal{M}_r$ and the projection as $\tens{G} = P_{T_{\tens{W}} \mathcal{M}_r}(\frac{\partial L}{\partial \tens{W}})$.
-\item Follow along $\tens{G}$ with some step~$\alpha$ (this operation increases the TT-rank).
-\item Retract the new point $\tens{W} - \alpha \tens{G}$ back to the manifold $\mathcal{M}_r$, that is decrease its TT-rank to $\rank$.
+\item Спроектировать градиент $\frac{\partial L}{\partial \tens{W}}$ на касательное пространство $\mathcal{M}_r$ текущей точки $\tens{W}$. Данное касательное пространство будет обозначаться как $T_{\tens{W}} \mathcal{M}_r$, а операция проекции как $\tens{G} = P_{T_{\tens{W}} \mathcal{M}_r}(\frac{\partial L}{\partial \tens{W}})$.
+\item Сделать шаг вдоль проекции градиента $\tens{G}$ с некоторым шагом~$\alpha$ (данная операция увеличивает ТТ-ранг).
+\item Выполнить операцию ретракции чтобы приблизить полученную точку $\tens{W} - \alpha \tens{G}$  элементом многообразия $\mathcal{M}_r$, то-есть уменьшить ТТ-ранг обратно до значения $\rank$.
 \end{enumerate}
-We now describe how to implement each of the steps outlined above.
+Далее описано как реализовать каждый из озвученных выше шагов.
 
 \begin{figure}[t]
 % \vskip 0.2in
@@ -251,54 +227,52 @@ We now describe how to implement each of the steps outlined above.
   \normalsize
   \includesvg{images/manifold}
   }
-  \caption{An illustration of one step of the Riemannian gradient descent. The step-size $\alpha$ is assumed to be $1$ for clarity of the figure. \label{fig:riemannian-illustration}}
+  \caption{Иллюстрация одного шага риманового градиентного спуска. Шаг $\alpha$ положен в $1$ для наглядности иллюстрации. \label{fig:riemannian-illustration}}
   \end{center}
   % \vskip -0.2in
 \end{figure}
 
-\cite{lubich2015time} proposed an algorithm to project a TT-tensor~$\tens{Z}$ on the tangent space of~$\mathcal{M}_r$ at a point~$\tens{W}$ which consists of two steps: preprocess the tensor~$\tens{W}$ in $O(d \rank^3)$ operations and project the tensor $\tens{Z}$ in $O(d \rank^2 \ttrank(\tens{Z})^2)$ operations.
-\cite{lubich2015time} also showed that the TT-rank of the projection is bounded by a constant that is independent of the TT-rank of the tensor~$\tens{Z}$:
+В работе~\cite{lubich2015time} был предожен метод проектирования тензора~$\tens{Z}$ на касательное пространство многобразия~$\mathcal{M}_r$ в точке~$\tens{W}$ который состоит из следующих двух шагов: предобработки тензора~$\tens{W}$, которая может быть выполнена за $O(d \rank^3)$ арифметических операций; и проектирования тензора $\tens{Z}$, которая может быть выполнена за $O(d \rank^2 \ttrank(\tens{Z})^2)$ арифметических операций.
+Так же было показано, что ТТ-ранг проекции ограничен константой не зависящей от ТТ-ранга проектируемого тензора~$\tens{Z}$:
 \begin{equation*}
    \ttrank(P_{T_{\tens{W}} \mathcal{M}_r}(\tens{Z})) \leq 2 \ttrank(\tens{W}) = 2 \rank.
 \end{equation*}
 
-Let us consider the gradient of the loss function~\eqref{eq:TT-loss}
+Рассмотрим градиент функции потерь~\eqref{eq:TT-loss}
 \begin{equation}
 \label{eq:TT-gradient}
 \frac{\partial L}{\partial \tens{W}} = \sum_{f=1}^N \frac{\partial \ell}{\partial \widehat{y}} \tens{X}^{(f)} + \lambda \tens{W}.
 \end{equation}
 
-Using the fact that $P_{T_{\tens{W}} \mathcal{M}_r}(\tens{W}) = \tens{W}$ and that the projection is a linear operator we get
+Пользуясь тем фактом, что любой ТТ-тензор принадлежит собственному касательному пространству $P_{T_{\tens{W}} \mathcal{M}_r}(\tens{W}) = \tens{W}$ и тем, что проекция это линейная операция, получаем
 \begin{equation}
 % \begin{aligned}
 \label{eq:riemannian-gradient}
 P_{T_{\tens{W}} \mathcal{M}_r}\left ( \frac{\partial L}{\partial \tens{W}} \right) = \sum_{f=1}^N \frac{\partial \ell}{\partial \widehat{y}} P_{T_{\tens{W}} \mathcal{M}_r}(\tens{X}^{(f)}) + \lambda \tens{W}.
 % \end{aligned}
 \end{equation}
-Since the resulting expression is a weighted sum of projections of individual data tensors $\tens{X}^{(f)}$, we can project them in parallel.
-Since the TT-rank of each of them equals~$1$ (see Sec.~\ref{sec:inference}), the total computational complexity of all $N$ projections is $O(d \rank^2 (\rank + N))$.
-% We sum all the tensors $P_{T_{\tens{W}} \mathcal{M}_r}(\tens{X}^{(f)})$ without TT-rank growth by exploiting their identical structure.
-The TT-rank of the projected gradient is less than or equal to $2 \rank$ regardless of the dataset size~$N$.
+Таким образом, проекция градиента является взвешанной суммой проекций тензоров $\tens{X}^{(f)}$, при этом все эти проекции могут быть выполнены параллельно.
+Отметим так же что ТТ-ранг данных тензоров равне~$1$ (см разел~\ref{sec:inference}), поэтому вычислительная сложность подсчета $N$ проекций состовляет $O(d \rank^2 (\rank + N))$.
+При этом ТТ-ранг проекции градиента  не превышает $2 \rank$ не зависимо от размера обучающей выборки~$N$.
 
-Note that here we used the particular choice of the regularization term. For terms other than $L_2$ (e.g. $L_1$), the gradient may have arbitrary large TT-rank.
+Отметим так же, что для построения алгоритма вычисления проекции градиента использовался конкретный выбор члена отвещающего за регуляризацию. При выборе члена регуляризации отличного от  $L_2$ (например $L_1$), сложность вычисления проекции градиента может возрасти.
 
-As a retraction -- a way to return back to the manifold $\mathcal{M}_r$ -- we use the TT-rounding procedure \cite{oseledets2011ttMain}. For a given tensor~$\tens{W}$ and rank~$\rank$ the TT-rounding procedure returns a tensor $\widehat{\tens{W}} = \ttround(\tens{W},\,\rank)$ such that its TT-rank equals $\rank$ and the Frobenius norm of the residual~$\| \tens{W} - \widehat{\tens{W}}\|_F$ is as small as possible.
-The computational complexity of the TT-rounding procedure is $O(dr^3)$.
+В качестве ретракции -- метода поиска аппроксимации данного тензора тензором с многообразия -- будет использоваться процедура ТТ-округления~\cite{oseledets2011ttMain}.
 
-Since we aim for big datasets, we use a stochastic version of the Riemannian gradient descent: on each iteration we sample a random mini-batch of objects from the dataset, compute the stochastic gradient for this mini-batch, make a step along the projection of the stochastic gradient, and retract back to the manifold (Alg.~\ref{alg:rimeannian-optimization}).
+Чтобы метод стал применим к выборкам состоящим из большого числа объектов, будет применяться стохастическая версия риманового градиентного спуска: на каждой итерации выбирается случайное подмножество объектов обучающей выборки, вычисляется проекция градиента слагаемых функции потерь отвечающих выбранным объектам, делается шаг по направлению проекции градиента, и результат снова округляется до ранга $\rank$ (см. алгоритм~\ref{alg:rimeannian-optimization}).
 
-The computational complexity of an iteration of the stochastic Riemannian gradient descent consists of $O(dr^2M)$ operations for inference, $O(dr^2(r + M))$ operations for gradient projection, and $O(dr^3)$ operations for retraction, yielding $O(dr^2(r + M))$ operations in total.
+Вычислительная сложность одной итерации стохастического риманового градиентного спуска для задачи~\eqref{eq:TT-loss-minimization}) сотавляет $O(dr^2(r + M))$ арифметических операций и состоит из $O(dr^2M)$ операций для подсчет скалярных произведений,  $O(dr^2(r + M))$ операций для вычисления проекции градиента и $O(dr^3)$ для ТТ-округлений, где $M$ это число объектов использующихся на каждой итерации метода.
 
 \begin{algorithm}[t]
    \caption{Riemannian optimization}
    \label{alg:rimeannian-optimization}
 \begin{algorithmic}
-   \STATE {\bfseries Input:} Dataset $\{(\vec{x}^{(f)}, y^{(f)})\}_{f=1}^N$, desired TT-rank $\rank_0$, number of iterations~$T$, mini-batch size~$M$, learning rate~$\alpha$, regularization strength~$\lambda$
-   \STATE {\bfseries Output:} $\tens{W}$ that approximately minimizes \eqref{eq:TT-loss-minimization}
-   \STATE Train linear model~\eqref{eq:linear-loss} to get the parameters $\vec{w}$ and $b$
-   \STATE Initialize the tensor $\tens{W}_0$ from $\vec{w}$ and $b$ with the TT-rank equal $\rank_0$
+   \STATE {\bfseries Input:} Обучающая выборка $\{(\vec{x}^{(f)}, y^{(f)})\}_{f=1}^N$, требуемый ТТ-ранг $\rank_0$, число итераций~$T$, размер мини-батча~$M$, шаг обучения~$\alpha$, сила регуляризатора~$\lambda$
+   \STATE {\bfseries Output:} $\tens{W}$ приближенно решающий задачу~\eqref{eq:TT-loss-minimization}
+   \STATE Обучить линейную модель~\eqref{eq:linear-loss} и получить параметры $\vec{w}$ и $b$
+   \STATE Инициализировать тензор $\tens{W}_0$ с ТТ-рангом равным $\rank_0$ используя $\vec{w}$ и $b$  (см. раздел~\ref{sec:exm-initialization})
    \FOR{$t := 1$ {\bfseries to} $T$}
-        \STATE Sample $M$ indices $h_1, \ldots, h_M \sim \mathcal{U}(\{1, \ldots, N\})$
+        \STATE Случайно выбрать $M$ индексов $h_1, \ldots, h_M \sim \mathcal{U}(\{1, \ldots, N\})$
         \STATE $\tens{D}_t := \sum_{j=1}^M \frac{\partial \ell}{\partial \widehat{y}} \tens{X}^{(h_j)}  + \lambda \tens{W}_{t-1}$
         \STATE $\tens{G}_t := P_{T_{\tens{W}_{t-1}} \mathcal{M}_r}\left ( \tens{D}_t \right)$~\eqref{eq:riemannian-gradient}
         \STATE $\tens{W}_{t} := \ttround(\tens{W}_{t-1} - \alpha \tens{G}_t, \,r_0)$
@@ -307,7 +281,7 @@ The computational complexity of an iteration of the stochastic Riemannian gradie
 \end{algorithm}
 
 
-\subsubsection{Initialization \label{sec:initialization}}
+\subsubsection{Initialization \label{sec:exm-initialization}}
 We found that a random initialization for the TT-tensor $\tens{W}$ sometimes freezes the convergence of optimization method (see Sec.~\ref{sec:exp-initialization}).
 We propose to initialize the optimization from the solution of the corresponding linear model~\eqref{eq:linear-model}.
 
