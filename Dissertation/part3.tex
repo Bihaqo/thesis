@@ -1,18 +1,18 @@
-\chapter{Тензорно-нейронные сети} \label{chap:tensornet}
-Исскуственные нейронные сети опережают другие подходы во многих задачах распознования образов, распознования речи, перевода, и т.п. [CITE TODO]
+\chapter{Нейронные сети} \label{chap:tensornet}
+Искусственные нейронные сети опережают другие подходы во многих задачах распознавания образов, распознавания речи, перевода, и т.п. [CITE TODO]
 Причиной успеха этого класса моделей является их большая гибкость и доступность большого количества вычислительных ресурсов (таких как кластеры графических ускорителей GPU).
-И, хотя исскуственные нейросети успешно применяются в промышлености (от машинного перевода, ...), их использования в мобильных и встроенных устройствах без доступа к интернету остается ограниченным.
+И, хотя искусственные нейросети успешно применяются в промышленности (от машинного перевода, ...), их использования в мобильных и встроенных устройствах без доступа к интернету остается ограниченным.
 
-Причина этому -- высокие требования к доступной памяти, вычислительной мощности и использованию аккумулятора. Например, популярная на сегоднешний день модель VGG-16 потребляет [TODO].
+Причина этому -- высокие требования к доступной памяти, вычислительной мощности и использованию аккумулятора. Например, популярная на сегодняшний день модель VGG-16 потребляет [TODO].
 
 В связи с этим многие работы были посвящены задачам сжатия и ускорения нейронных сетей. Обратите внимание, что размер требуемой памяти является одним из ограничивающих факторов к снижению энергопотребления моделей. Так, при использовании 45 нм техпроцесса по технологии КМОП, требуется 0.9 пДж чтобы сложить два 32-битных числа с плавающей точкой, доступ к одному 32-битному числу в кэше SRAM требует 5 пДж, и доступ к 32-битному числу в оперативной памяти требует 640 пДж, что на три порядка больше по сравнению с операцией сложения. Большие нейросети не помещаются в кэш процессора и таким образом требует ресурсоемкого доступа к оперативной памяти.
 
 В данной главе представлен тензорный подход к сжатию и ускорению (а значит и снижению энергопотребления) нейронных сетей.
 
-\section{Обзор существущих подходов к сжатию нейронных сетей} \label{sec:tensornet-alternatives}
-В современных нейронных сетях до 99\% памяти занимают веса полносвязных слоев. В связи с этим, многие работы ставили своей целью исследование возможности сжатия полносвзянных слоев. Одним из первых рассмотренных подходов к сжатию стало ограничение ранга матрицы полносвязного слоя~\cite{Denil2013predicting}. Ограничение случайного подмножества элементов матрицы так, чтобы все элементы каждого подмножества имели одно и то же значение~\cite{chen2015compressing} позволило сжимать полносвязные слои в 8 раз без потери качества. Так же рассматривалась более общая постановка, в которой ограничивалось число возможных значений которые могут принимать различные элементы матрицы~\cite{gong2014PQcompressing}. Было показано, что использование 16-битный чисел с плавающей точкой вместо 64-битных  для хранения параметров нейросети возможно без потери качества классификации, что соответсвует сжатию сети в 4 раза~\cite{Gupta2015floatingPoint}.
+\section{Обзор существующих подходов к сжатию нейронных сетей} \label{sec:tensornet-alternatives}
+В современных нейронных сетях до 99\% памяти занимают веса полносвязных слоев. В связи с этим, многие работы ставили своей целью исследование возможности сжатия полносвязных слоев. Одним из первых рассмотренных подходов к сжатию стало ограничение ранга матрицы полносвязного слоя~\cite{Denil2013predicting}. Ограничение случайного подмножества элементов матрицы так, чтобы все элементы каждого подмножества имели одно и то же значение~\cite{chen2015compressing} позволило сжимать полносвязные слои в 8 раз без потери качества. Так же рассматривалась более общая постановка, в которой ограничивалось число возможных значений которые могут принимать различные элементы матрицы~\cite{gong2014PQcompressing}. Было показано, что использование 16-битный чисел с плавающей точкой вместо 64-битных  для хранения параметров нейросети возможно без потери качества классификации, что соответсвует сжатию сети в 4 раза~\cite{Gupta2015floatingPoint}.
 
-Метод предложенный в данной диссертации больше всего похож на низгоранговый подход~\cite{Denil2013predicting}, однако вместо ограничения матричного рангла мы рассматриваем матрицу слоя как многомерный линейный оператор и ограничиваем ее ТТ-ранг.
+Метод предложенный в данной диссертации больше всего похож на низгоранговый подход~\cite{Denil2013predicting}, однако вместо ограничения матричного ранга мы рассматриваем матрицу слоя как многомерный линейный оператор и ограничиваем ее ТТ-ранг.
 
 
 
@@ -23,7 +23,7 @@
   y = \mat{W} x + \vec{b},
 \end{equation}
 где $\mat{W}$ -- это матрица весов, а $\vec{b}$ -- вектор сдвига.
-Рассмотрим как изменится преобразование~\ref{eq:tensornet-linear-layer} при использовани ТТ-формата для предстваления матрицы весов~$W$. Напомним, что ТТ-формат для матриц задается особым образом, заключающемся в построения вектор-индексов строк и столбцов ($i <-> (i_1, \ldots, i_d)$, $j <-> (j_1, \ldots, j_d)$) и построении ТТ-формата для тензора $\tens{W}$ получающегося путем перестановки и группировки индексов в исходной матрице (см.~\ref{??}).
+Рассмотрим как изменится преобразование~\ref{eq:tensornet-linear-layer} при использовании ТТ-формата для представления матрицы весов~$W$. Напомним, что ТТ-формат для матриц задается особым образом, заключающемся в построения вектор-индексов строк и столбцов ($i <-> (i_1, \ldots, i_d)$, $j <-> (j_1, \ldots, j_d)$) и построении ТТ-формата для тензора $\tens{W}$ получающегося путем перестановки и группировки индексов в исходной матрице (см.~\ref{??}).
 Для удобства обозначений, рассмотрим так же тензорную версию вектора сдвига $\vec{b}$: $\tensel{B}(i_1, \ldots, j_d) = \vec{b}_j$
 \begin{equation}
 % \begin{aligned}
@@ -113,6 +113,286 @@ The presented algorithm reduces to a sequence of matrix-by-matrix products and p
 
 
 Сложность $O(d r^2 n \max\{m, n\}^d) = O(d r^2 n \max\{M, N\})$.
+
+\section{Альтернативная модель рекурентных нейронных сетей}
+Хочется обучать сети быстро, предлагается модель обучаемая Риманом.
+
+\subsection{Предлагаемая модель}
+Before introducing our model equation in the general case, consider a $3$-dimensional example. The equation includes one term per each subset of features (each interaction)
+\begin{equation}
+\label{eq:polynomial-model-example}
+\begin{aligned}
+\widehat{y}(\vec{x}) &= \tensel{W}_{000} + \tensel{W}_{100} \,\, x_1 + \tensel{W}_{010} \,\, x_2 + \tensel{W}_{001} x_3 \\
+&+ \tensel{W}_{110} \,\, x_1 x_2 + \tensel{W}_{101} \,\, x_1 x_3 + \tensel{W}_{011} \,\, x_2 x_3 \\
+&+ \tensel{W}_{111} \,\, x_1 x_2 x_3.
+\end{aligned}
+\end{equation}
+Note that all permutations of features in a term (e.g. $x_1 x_2$ and $x_2 x_1$) correspond to a single term and have exactly one associated weight (e.g. $\tensel{W}_{110}$).
+
+In the general case, we enumerate the subsets of features with a binary vector $(i_1, \ldots, i_d)$, where $i_k = 1$ if the $k$-th feature belongs to the subset. The model equation looks as follows
+\begin{equation}
+\label{eq:polynomial-model}
+\widehat{y}(\vec{x}) = \sum_{i_1=0}^1 \ldots \sum_{i_d=0}^1 \tensel{W}_{i_1 \ldots i_d} \prod_{k=1}^d x_k^{i_k}.
+\end{equation}
+Here we assume that $0^0 = 1$.
+The model is parametrized by a $d$-dimensional tensor $\tens{W}$, which consists of $2^d$ elements.
+
+The model equation~\eqref{eq:polynomial-model} is linear with respect to the weight tensor $\tens{W}$.
+To emphasize this fact and simplify the notation we rewrite the model equation~\eqref{eq:polynomial-model} as a tensor dot product $\widehat{y}(\vec{x}) = \langle \tens{X}, \tens{W} \rangle$, where the tensor $\tens{X}$ is defined as follows
+\begin{equation}
+\label{eq:X-definition}
+\tensel{X}_{i_1 \ldots i_d} = \prod_{k=1}^d x_k^{i_k}.
+\end{equation}
+Note that there is no need in a separate bias term, since it is already included in the model as the weight tensor element~$\tensel{W}_{0 \ldots 0}$ (see the model equation example~\eqref{eq:polynomial-model-example}).
+
+The key idea of our method is to compactly represent the exponentially large tensor of parameters $\tens{W}$ in the Tensor Train format~\cite{oseledets2011ttMain}.
+
+\subsection{Быстрый метод вывода}
+In this section, we return to the model proposed in Sec.~\ref{sec:the-model} and show how to compute the model equation~\eqref{eq:polynomial-model} in linear time.
+To avoid the exponential complexity, we represent the weight tensor~$\tens{W}$ and the data tensor~$\tens{X}$~\eqref{eq:X-definition} in the TT-format.
+The TT-ranks of these tensors determine the efficiency of the scheme.
+During the learning, we initialize and optimize the tensor $\tens{W}$ in the TT-format and explicitly control its TT-rank.
+The TT-rank of the tensor $\tens{X}$ always equals 1. Indeed, the following TT-cores give the exact representation of the tensor~$\tens{X}$
+\begin{equation*}
+G_k[i_k] = x_k^{i_k} \in \mathbb{R}^{1 \times 1}, ~~ k=1, \ldots, d.
+\end{equation*}
+The $k$-th core $G_k[i_k]$ is a $1 \times 1$ matrix for any value of $i_k \in \{0, 1\}$, hence the TT-rank of the tensor $\tens{X}$ equals~$1$.
+
+Now that we have TT-representations of tensors $\tens{W}$ and $\tens{X}$, we can compute the model response $\widehat{y}(\vec{x}) = \langle \tens{X}, \tens{W} \rangle$ in linear time with respect to the number of features $d$.
+\begin{theorem}
+\label{thm:inference-time}
+The computational complexity of computing the model response~$\widehat{y}(\vec{x})$ is $O(\rank^2 d)$, where $\rank$ is the TT-rank of the weight tensor~$\tens{W}$.
+\end{theorem}
+
+\begin{proof}
+  Let us rewrite the definition of the model response~\eqref{eq:polynomial-model} assuming that the weight tensor $\tens{W}$ is represented in the TT-format~\eqref{eq:TT-format}
+\begin{equation*}
+\begin{aligned}
+\widehat{y}(\vec{x}) &= \sum_{i_1, \ldots, i_d} \tensel{W}_{i_1 \ldots i_d} \, \left ( \prod_{k=1}^d x_k^{i_k} \right )\\
+&= \sum_{i_1, \ldots, i_d} G_1[i_1] \ldots G_d[i_d] \left ( \prod_{k=1}^d x_k^{i_k} \right ).
+\end{aligned}
+\end{equation*}
+
+Let us group the factors that depend on the variable $i_k$, $k=1, \ldots, d$
+\begin{equation*}
+%\label{eq:fast-model-equation}
+\begin{aligned}
+\widehat{y}(\vec{x}) &= \sum_{i_1, \ldots, i_d}  x_1^{i_1} G_1[i_1] \ldots x_d^{i_d} G_d[i_d]\\
+&= \left ( \sum_{i_1=0}^1 x_1^{i_1} G_1[i_1] \right ) \ldots \left ( \sum_{i_d=0}^1 x_d^{i_d} G_d[i_d] \right )\\
+&= \underbrace{A_1}_{1 \times \rank} \underbrace{A_2}_{\rank \times \rank} \ldots \underbrace{A_d}_{\rank \times 1},
+\end{aligned}
+\end{equation*}
+where the matrices $A_k$ for $k=1, \ldots, d$ are defined as follows
+\begin{equation*}
+A_k = \sum_{i_k=0}^1 x_k^{i_k} G_k[i_k] = G_k[0] + x_k G_k[1].
+\end{equation*}
+The final value $\widehat{y}(\vec{x})$ can be computed from the matrices~$A_k$ via $d-1$ matrix-by-vector multiplications and $1$ vector-by-vector multiplication, which yields $O(r^2 d)$ complexity.
+
+Note that the proof is constructive and corresponds to the implementation of the inference algorithm.
+\end{proof}
+
+
+The TT-rank of the weight tensor $\tens{W}$ is a hyper-parameter of our method and it controls the efficiency vs. flexibility trade-off.
+A small TT-rank regularizes the model and yields fast learning and inference but restricts the set of possible tensors~$\tens{W}$.
+A sufficiently large TT-rank allows any value of the tensor~$\tens{W}$ and effectively leaves us with the full polynomial model without any advantages of the TT-format.
+
+\subsection{Метод обучения}
+Learning the parameters of the proposed model corresponds to minimizing the loss under the TT-rank constraint:
+\begin{equation}
+\label{eq:TT-loss-minimization}
+\begin{aligned}
+& \underset{\tens{W}}{\text{minimize}}
+& & L(\tens{W}), \\
+& \text{subject to}
+& & \ttrank(\tens{W}) = r_0,
+\end{aligned}
+\end{equation}
+where the loss is defined as follows
+\begin{equation}
+\label{eq:TT-loss}
+L(\tens{W}) = \sum_{f=1}^N \ell\left(\langle \tens{X}^{(f)}, \tens{W} \rangle,\, y^{(f)}\right) + \frac{\lambda}{2} \norm{\tens{W}}^2_F.
+\end{equation}
+
+Here by the Frobenius norm $\| \cdot \|_F$ we mean the square root of sum of squares of the elements
+\begin{equation*}
+\norm{\tens{W}}^2_F = \sum_{i_1=0}^1 \ldots \sum_{i_d=0}^1 \tensel{W}^2_{i_1 \ldots i_d}.
+\end{equation*}
+
+We consider two approaches to solve problem~\eqref{eq:TT-loss-minimization}.
+In a baseline approach, we optimize the objective $L(\tens{W})$ with the stochastic gradient descent applied to the underlying parameters of the TT-format of the tensor $\tens{W}$.
+
+An alternative to the baseline is to perform gradient descent with respect to the tensor $\tens{W}$, that is subtract the  gradient from the current estimate of $\tens{W}$ on each iteration.
+The TT-format indeed allows to subtract tensors, but this operation increases the TT-rank on each iteration, making this approach impractical.
+
+To improve upon the baseline and avoid the TT-rank growth, we exploit the geometry of the set of tensors that satisfy the TT-rank constraint~\eqref{eq:TT-loss-minimization} to build a Riemannian optimization procedure (Sec.~\ref{sec:riemannian-optimization}).
+We experimentally show the advantage of this approach over the baseline in Sec.~\ref{sec:exp-riemannian-optimization}.
+
+\subsubsection{Riemannian optimization \label{sec:riemannian-optimization}}
+The set of all $d$-dimensional tensors with fixed TT-rank $\rank$
+\begin{equation*}
+% \label{eq:TT-manifold}
+\mathcal{M}_r = \{\tens{W} \in \mathbb{R}^{2 \times  \ldots \times 2}\!:\, \ttrank(\tens{W})=\rank\}
+\end{equation*}
+forms a Riemannian manifold~\cite{holtz2012manifolds}.
+This observation allows us to use Riemannian optimization to solve problem~\eqref{eq:TT-loss-minimization}.
+Riemannian gradient descent consists of the following steps which are repeated until convergence (see Fig.~\ref{fig:riemannian-illustration} for an illustration):
+\begin{enumerate}
+\item Project the gradient $\frac{\partial L}{\partial \tens{W}}$ on the tangent space of $\mathcal{M}_r$ taken at the point $\tens{W}$. We denote the tangent space as $T_{\tens{W}} \mathcal{M}_r$ and the projection as $\tens{G} = P_{T_{\tens{W}} \mathcal{M}_r}(\frac{\partial L}{\partial \tens{W}})$.
+\item Follow along $\tens{G}$ with some step~$\alpha$ (this operation increases the TT-rank).
+\item Retract the new point $\tens{W} - \alpha \tens{G}$ back to the manifold $\mathcal{M}_r$, that is decrease its TT-rank to $\rank$.
+\end{enumerate}
+We now describe how to implement each of the steps outlined above.
+
+\begin{figure}[t]
+% \vskip 0.2in
+\begin{center}
+  \resizebox{0.3\textwidth}{!}{
+  \def\svgwidth{7cm}
+  \normalsize
+  \includesvg{images/manifold}
+  }
+  \caption{An illustration of one step of the Riemannian gradient descent. The step-size $\alpha$ is assumed to be $1$ for clarity of the figure. \label{fig:riemannian-illustration}}
+  \end{center}
+  % \vskip -0.2in
+\end{figure}
+
+\cite{lubich2015time} proposed an algorithm to project a TT-tensor~$\tens{Z}$ on the tangent space of~$\mathcal{M}_r$ at a point~$\tens{W}$ which consists of two steps: preprocess the tensor~$\tens{W}$ in $O(d \rank^3)$ operations and project the tensor $\tens{Z}$ in $O(d \rank^2 \ttrank(\tens{Z})^2)$ operations.
+\cite{lubich2015time} also showed that the TT-rank of the projection is bounded by a constant that is independent of the TT-rank of the tensor~$\tens{Z}$:
+\begin{equation*}
+   \ttrank(P_{T_{\tens{W}} \mathcal{M}_r}(\tens{Z})) \leq 2 \ttrank(\tens{W}) = 2 \rank.
+\end{equation*}
+
+Let us consider the gradient of the loss function~\eqref{eq:TT-loss}
+\begin{equation}
+\label{eq:TT-gradient}
+\frac{\partial L}{\partial \tens{W}} = \sum_{f=1}^N \frac{\partial \ell}{\partial \widehat{y}} \tens{X}^{(f)} + \lambda \tens{W}.
+\end{equation}
+
+Using the fact that $P_{T_{\tens{W}} \mathcal{M}_r}(\tens{W}) = \tens{W}$ and that the projection is a linear operator we get
+\begin{equation}
+% \begin{aligned}
+\label{eq:riemannian-gradient}
+P_{T_{\tens{W}} \mathcal{M}_r}\left ( \frac{\partial L}{\partial \tens{W}} \right) = \sum_{f=1}^N \frac{\partial \ell}{\partial \widehat{y}} P_{T_{\tens{W}} \mathcal{M}_r}(\tens{X}^{(f)}) + \lambda \tens{W}.
+% \end{aligned}
+\end{equation}
+Since the resulting expression is a weighted sum of projections of individual data tensors $\tens{X}^{(f)}$, we can project them in parallel.
+Since the TT-rank of each of them equals~$1$ (see Sec.~\ref{sec:inference}), the total computational complexity of all $N$ projections is $O(d \rank^2 (\rank + N))$.
+% We sum all the tensors $P_{T_{\tens{W}} \mathcal{M}_r}(\tens{X}^{(f)})$ without TT-rank growth by exploiting their identical structure.
+The TT-rank of the projected gradient is less than or equal to $2 \rank$ regardless of the dataset size~$N$.
+
+Note that here we used the particular choice of the regularization term. For terms other than $L_2$ (e.g. $L_1$), the gradient may have arbitrary large TT-rank.
+
+As a retraction -- a way to return back to the manifold $\mathcal{M}_r$ -- we use the TT-rounding procedure \cite{oseledets2011ttMain}. For a given tensor~$\tens{W}$ and rank~$\rank$ the TT-rounding procedure returns a tensor $\widehat{\tens{W}} = \ttround(\tens{W},\,\rank)$ such that its TT-rank equals $\rank$ and the Frobenius norm of the residual~$\| \tens{W} - \widehat{\tens{W}}\|_F$ is as small as possible.
+The computational complexity of the TT-rounding procedure is $O(dr^3)$.
+
+Since we aim for big datasets, we use a stochastic version of the Riemannian gradient descent: on each iteration we sample a random mini-batch of objects from the dataset, compute the stochastic gradient for this mini-batch, make a step along the projection of the stochastic gradient, and retract back to the manifold (Alg.~\ref{alg:rimeannian-optimization}).
+
+The computational complexity of an iteration of the stochastic Riemannian gradient descent consists of $O(dr^2M)$ operations for inference, $O(dr^2(r + M))$ operations for gradient projection, and $O(dr^3)$ operations for retraction, yielding $O(dr^2(r + M))$ operations in total.
+
+\begin{algorithm}[t]
+   \caption{Riemannian optimization}
+   \label{alg:rimeannian-optimization}
+\begin{algorithmic}
+   \STATE {\bfseries Input:} Dataset $\{(\vec{x}^{(f)}, y^{(f)})\}_{f=1}^N$, desired TT-rank $\rank_0$, number of iterations~$T$, mini-batch size~$M$, learning rate~$\alpha$, regularization strength~$\lambda$
+   \STATE {\bfseries Output:} $\tens{W}$ that approximately minimizes \eqref{eq:TT-loss-minimization}
+   \STATE Train linear model~\eqref{eq:linear-loss} to get the parameters $\vec{w}$ and $b$
+   \STATE Initialize the tensor $\tens{W}_0$ from $\vec{w}$ and $b$ with the TT-rank equal $\rank_0$
+   \FOR{$t := 1$ {\bfseries to} $T$}
+        \STATE Sample $M$ indices $h_1, \ldots, h_M \sim \mathcal{U}(\{1, \ldots, N\})$
+        \STATE $\tens{D}_t := \sum_{j=1}^M \frac{\partial \ell}{\partial \widehat{y}} \tens{X}^{(h_j)}  + \lambda \tens{W}_{t-1}$
+        \STATE $\tens{G}_t := P_{T_{\tens{W}_{t-1}} \mathcal{M}_r}\left ( \tens{D}_t \right)$~\eqref{eq:riemannian-gradient}
+        \STATE $\tens{W}_{t} := \ttround(\tens{W}_{t-1} - \alpha \tens{G}_t, \,r_0)$
+   \ENDFOR
+\end{algorithmic}
+\end{algorithm}
+
+
+\subsubsection{Initialization \label{sec:initialization}}
+We found that a random initialization for the TT-tensor $\tens{W}$ sometimes freezes the convergence of optimization method (see Sec.~\ref{sec:exp-initialization}).
+We propose to initialize the optimization from the solution of the corresponding linear model~\eqref{eq:linear-model}.
+
+The following theorem shows how to initialize the weight tensor $\tens{W}$ from a linear model.
+\begin{theorem}
+\label{thm:initialization-rank}
+For any $d$-dimensional vector $\vec{w}$ and a bias term $b$ there exist a tensor $\tens{W}$ of TT-rank $2$, such that for any $d$-dimensional vector $\vec{x}$ and the corresponding object-tensor $\tens{X}$ the dot products $\langle \vec{x}, \vec{w} \rangle$ and $\langle \tens{X}, \tens{W} \rangle$ coincide.
+\end{theorem}
+For the proof of Theorem~\ref{thm:initialization-rank}, we refer the reader to Appendix~\ref{sec:app-initialization-rank-proof}.
+
+%\begin{figure*}[t]
+%  % \vskip 0.2in
+%  \centering
+%  \subfigure[Training set\hspace*{2.3cm}]{\includegraphics[width=0.45\textwidth]{images/riemannian_vs_plain_car_train.pdf}}
+%  \hspace*{0.9cm}
+%  \subfigure[Test set\hspace*{2.3cm}]{\includegraphics[width=0.45\textwidth]{images/riemannian_vs_plain_car_validation.pdf}}
+%  \caption{Binarized Car dataset, a comparison between Riemannian optimization and SGD applied to the underlying parameters of the TT-format (the baseline) for the rank-$4$ Exponential Machines.
+%  Numbers in the legend stand for the batch size.
+%  The method marked with `rand init' in the legend (square markers) was initialized from a random TT-tensor (type-1 initialization, see Sec.~\ref{sec:exp-initialization} for details), all other methods were initialized from the solution of ordinary linear logistic regression.
+%  \label{fig:riemannian_vs_plain_car}}
+%  % \vskip -0.2in
+%\end{figure*}
+
+\subsection{Развтие модели \label{sec:exm-model-extension}}
+In this section, we extend the proposed model to handle polynomials of any functions of the features.
+As an example, consider the logarithms of the features in the $2$-dimensional case:
+\begin{equation*}
+  \begin{aligned}
+    \widehat{y}^{\,\log}(\vec{x}) =& \,\tensel{W}_{00} + \tensel{W}_{01} x_1 +\tensel{W}_{10} x_2 + \tensel{W}_{11} x_1 x_2\\
+    &+\tensel{W}_{20} \,\, \log(x_1) + \tensel{W}_{02} \,\, \log(x_2)\\
+    &+ \tensel{W}_{12} \,\, x_1 \log(x_2)+ \tensel{W}_{21} \,\, x_2 \log(x_1)\\
+    &+ \tensel{W}_{22} \,\, \log(x_1) \log(x_2).
+  \end{aligned}
+\end{equation*}
+In the general case, to model interactions between $n_g$ functions $g_1, \ldots, g_{n_g}$ of the features we redefine the object-tensor as follows:
+\begin{equation*}
+\tensel{X}_{i_1 \ldots i_d} = \prod_{k=1}^d c(x_k, i_k),
+\end{equation*}
+where
+\begin{equation*}
+c(x_k, i_k) =
+\begin{cases}
+1, & \text{if } i_k = 0,\\
+g_1(x_k), & \text{if } i_k = 1,\\
+\ldots\\
+g_{n_g}(x_k), & \text{if } i_k = n_g,\\
+\end{cases}
+\end{equation*}
+
+The weight tensor $\tens{W}$ and the object-tensor $\tens{X}$ are now consist of $(n_g + 1)^d$ elements.
+After this change to the object-tensor $\tens{X}$, learning and inference algorithms will stay unchanged compared to the original model~\eqref{eq:polynomial-model}.
+
+\paragraph{Categorical features.} Our basic model handles categorical features $x_k \in \{1, \ldots, K\}$ by converting them into one-hot vectors $x_{k,1}, \ldots, x_{k,K}$. The downside of this approach is that it wastes the model capacity on modeling non-existing interactions between the one-hot vector elements $x_{k,1}, \ldots, x_{k,K}$ which correspond to the same categorical feature. Instead, we propose to use one TT-core per categorical feature and use the model extension technique with the following function
+\begin{equation*}
+c(x_k, i_k) =
+\begin{cases}
+1, & \text{if } x_k = i_k \text{ or } i_k = 0,\\
+0, & \text{otherwise.}
+\end{cases}
+\end{equation*}
+This allows us to cut the number of parameters per categorical feature from $2K\rank^2$ to $(K + 1)\rank^2$ without losing any representational power.
+
+\section{Связь с рекурентными нейросетями}
+In this section, we show the connection between the proposed model and Multiplicative Integration Recurrent Neural Networks~\cite{wu2016multiplicative}.
+
+Recall the model equation, rewritten as a matrix multiplicaton~\eqref{eq:fast-model-equation}
+\begin{equation}
+\label{eq:fast-model-equation-rnn}
+\widehat{y}(\vec{x}) = \left ( \sum_{i_1=0}^1 x_1^{i_1} G_1[i_1] \right ) \ldots \left ( \sum_{i_d=0}^1 x_d^{i_d} G_d[i_d] \right ).
+\end{equation}
+
+ Let's assume that instead of a $d$-dimensional object $\vec{x}$ we have a sequence of $d$ objects $x_1, \ldots, x_d$, and that each of the objects has two features $\vec{f}(x_k) = [1, x_k]$. Let's define $\vec{h}_k$ to be the product of the first $k$ matrices in Eq.~\eqref{eq:fast-model-equation-rnn}. Then, the model equation can be rewritten as
+ \begin{align*}
+\vec{h}_1 &=  \left ( \sum_{i_1=0}^1 f(x_1)_{i_1} G_1[i_1] \right ) = \vec{f}(x_1) \, G_1,\\
+\vec{h}_k &= \vec{h}_{k-1} \left ( \sum_{i_k=0}^1 f(x_k)_{i_k} G_k[i_k] \right ) = \left (\vec{h}_{k-1} \otimes \vec{f}(x_k) \right) \, G_k,\\
+\widehat{y}(\vec{x}) &= \vec{h}_d.
+\end{align*}
+
+Compare it to the formulas of Multiplicative Integration Recurrent Neural Networks assuming the identity function in place of a non-linearity $\phi$
+% \begin{align*}
+%\vec{h}_k = \mat{W}\vec{f}(x_k) \odot \mat{U} \vec{h}_{k-1} = \underbrace{\left (\mat{W} \mat{U} \right)}_{G_k} \left ( \vec{f}(x_k) \otimes \vec{h}_{k-1} \right )
+%\end{align*}
+
+
+
 
 \section{Выводы по главе} \label{sec:tensornet-conclusion}
 Recent studies indicate high redundancy in current neural network parametrization. To exploit this redundancy we propose to use the TT-decomposition framework on the weight matrix of a fully-connected layer and to use the TT-cores as the parameters of the layer. This allows us to train fully-connected layers compressed by up to $200\,000\times$ compared to the explicit parametrization without significant error increase. Our experiments prove that is is possible to capture complex dependencies within the data by using much more compact representations of neural networks. On the other hand it becomes possible to use much wider layers than was available before and the preliminary experiments on the CIFAR-10 dataset show that wide and shallow TensorNets achieve promising results (setting new state-of-the-art for non-convolutional neural networks). Much more work needs to be done in this direction and careful combining of the TT-layer with recent advances in deep learning may lead to better results in different applied domains.
