@@ -1,0 +1,85 @@
+% This file was created by matlab2tikz v0.4.7 running on MATLAB 8.1.
+% Copyright (c) 2008--2014, Nico Schlömer <nico.schloemer@gmail.com>
+% All rights reserved.
+% Minimal pgfplots version: 1.3
+%
+% The latest updates can be retrieved from
+%   http://www.mathworks.com/matlabcentral/fileexchange/22022-matlab2tikz
+% where you can also make suggestions and rate matlab2tikz.
+%
+%
+% defining custom colors
+\definecolor{mycolor1}{rgb}{0.00000,0.00000,0.17241}%
+\definecolor{mycolor2}{rgb}{1.00000,0.10345,0.72414}%
+\definecolor{mycolor3}{rgb}{0.00000,0.34483,0.00000}%
+%
+\begin{tikzpicture}
+
+\begin{axis}[%
+width=\figurewidth,
+height=\figureheight,
+scale only axis,
+xmode=log,
+xmin=20,
+xmax=250000,
+xminorticks=true,
+xlabel={\# parameters in the first layer matrix},
+ymode=log,
+ymin=1,
+ymax=100,
+yminorticks=true,
+ylabel={test error \%},
+axis x line*=bottom,
+axis y line*=left,
+legend style={draw=none,fill=white,legend cell align=left,at={(1.7,1)},anchor=north east}
+]
+\addplot [color=blue,solid]
+  table[row sep=crcr]{2048  2.15\\
+4096    3.38\\
+6144    3.41\\
+8192    3.27\\
+};
+\addlegendentry{$32 \times 32$};
+
+\addplot [color=red,solid]
+  table[row sep=crcr]{160   2.77\\
+576 1.64\\
+1248    1.63\\
+2176    1.6\\
+};
+\addlegendentry{$4 \times 8 \times 8 \times 4$};
+
+\addplot [color=green,solid]
+  table[row sep=crcr]{80    2.7\\
+256 2.42\\
+528 1.75\\
+896 1.7\\
+};
+\addlegendentry{$4 \times 4 \times 4 \times 4 \times 4$};
+
+\addplot [color=mycolor1,solid]
+  table[row sep=crcr]{144   3.03\\
+560 2.03\\
+1248    2.1\\
+2208    1.74\\
+};
+\addlegendentry{$2 \times 2 \times 8 \times 8 \times 2 \times 2$};
+
+\addplot [color=mycolor2,solid]
+  table[row sep=crcr]{40    3.35\\
+144 2.87\\
+312 2.29\\
+544 2.11\\
+};
+\addlegendentry{$2^{10}$};
+
+\addplot [color=mycolor3,solid]
+  table[row sep=crcr]{2048  66.89\\
+20480   3.54\\
+102400  2.29\\
+204800  2.24\\
+};
+\addlegendentry{matrix rank};
+
+\end{axis}
+\end{tikzpicture}%
