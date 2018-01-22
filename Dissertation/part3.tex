@@ -143,20 +143,64 @@ L(\tens{W}) = \sum_{f=1}^N \ell\left(\langle \tens{X}^{(f)}, \tens{W} \rangle,\,
 \subsubsection{Справка по методам римановой оптимизации \label{sec:riemannian-help}}
 Данный раздел является обзорным, и в нем приведена основная информация по методам римановой оптимизации используемая далее.
 
-Ключевым понятием в римановой оптимизации является \emph{гладкое многообразие}.
-\alert{todo: гладкое многообразие это}
+Ключевым понятием в римановой оптимизации является \emph{гладкое многообразие}. Пусть $\mathcal{U} \subset \mathbb{R}^n$ и $\mathcal{V} \subset \mathbb{R}^m$ это открытые множества. Отображение $f: \mathcal{U} \to \mathcal{V}$ называется гладким если $f$ бесконечно непрерывно диффиренцируемый. Биективное отображение $f$ называют \emph{диффеоморфизмом} если и $f$ и обратное отображение $f^{-1}$ являются гладкими. Множества $\mathcal{U}$ и $\mathcal{V}$ в таком случае называют \emph{диффеоморфными}.
+
+Пусть $\mathcal{M} \subset \mathbb{R}^n$ это некоторая поверхность в $\mathbb{R}^n$. Основная идея введения понятия гладкого многообразия состоит в том, чтобы построить соответствие между участками поверхности $\mathcal{M}$ и евклидовом множеством $\mathbb{R}^m$ чтобы свести операции над $\mathcal{M}$ к операциям над $\mathbb{R}^m$. Данная идея иллюстрируется на Рис.~\ref{fig:manifold-def}, а формальное определение дается ниже:
+\begin{definition}
+	\cite{RS13, Def. 1.3} Множество $\mathcal{M} \subset \mathbb{R}^n$ называют гладким подмногообразием $\mathbb{R}^n$ если для любого $x \in \mathcal{M}$	 найдется открытая окрестность $\mathcal{U} \subset \mathbb{R}^n$ такая, что $\mathcal{U} \cap \mathcal{M}$ диффеоморфно открытому подмножеству $\mathcal{V} \subset \mathbb{R}^m$. Диффеоморфизм $\phi: \mathcal{U} \cap \mathcal{M} \to \mathcal{V}$ называют атласом многообразия $\mathcal{M}$.
+\end{definition}
+
+\begin{figure}[t]
+% \vskip 0.2in
+\begin{center}
+  \includegraphics[width=0.8\textwidth]{images/manifold_def.png}
+  \caption{\alert{TODO: перерисовать} Иллюстрация гладкого $m$-мерного многообразия в $\mathbb{R}^n$. Атлас $\phi$ отображает окрестность  $\mathcal{U} \cap \mathcal{M}$ точки $x \in \mathcal{M}$ в открытое подмножество $\mathbb{R}^n$. \label{fig:manifold-def}}
+  \end{center}
+  % \vskip -0.2in
+\end{figure}
 
 В работе~\cite{holtz2012manifolds} было показано, что множество $d$-мерных тензоров фиксированного размера и с фиксированными ТТ-рангами $\rank$
 \begin{equation*}
 % \label{eq:TT-manifold}
-\mathcal{M}_r = \{\tens{W} \in \mathbb{R}^{2 \times  \ldots \times 2}\!:\, \ttrank(\tens{W})=\rank\}
+\mathcal{M}_r = \{\tens{W} \in \mathbb{R}^{n_1 \times  \ldots \times n_d}\!:\, \ttrank(\tens{W})=\rank\}
 \end{equation*}
 образует гладкое многообразие.
 
-В каждой точки гладкого многообразия можно построить \emph{касательное пространство} определяемое следующим образом
-\alert{todo: касательное пространство}
+В каждой точке $x \in \mathcal{M}$ гладкого многообразия $\mathcal{M}$ можно построить \emph{касательное пространство}, интуитивно которое можно представлять как плоскость ортогональную поверхности $\mathcal{M}$ в данной точке (см. Рис.~\ref{fig:tangent-space}). Формально, касательное пространство определяется следующим образом
+\begin{definition}
+	\cite{RS13, Def. 1.21} Пусть $\mathcal{M} \subset \mathbb{R}^n$ это гладкое $m$-мерное подмногообразие. Вектор $\xi \in \mathbb{R}^n$ называют касательным вектором многообразия $\mathcal{M}$ в точке $x \in \mathcal{M}$ если найдется гладкая кривая $\gamma: \mathbb{R} \to \mathcal{M}$ такая что
+\[
+\gamma(0) = x, ~~ \gamma'(0) = \lim_{t \to 0} \frac{\gamma(t) - \gamma(0)}{t} = \xi.
+\]
+Множество касательных векторов $\mathcal{M}$ в точке $x$,
+\[
+T_x \mathcal{M} := \{\gamma'(0) \mid \gamma : \mathbb{R} \to \mathcal{M} \text{ является гладким}, \gamma(0) = x\},
+\]
+называется касательным пространством $\mathcal{M}$ в точке $x$.
+\end{definition}
 
-Как показано в работе~\cite{??}, касательное пространство многообразия тензоров фиксированного ТТ ранга ?? в точке ?? определяется следующим образом.
+\begin{figure}[t]
+\begin{center}
+  \includegraphics[width=0.8\textwidth]{images/tangent_space.png}
+  \caption{\alert{TODO: перерисовать} Иллюстрация касательного пространства $T_x \mathcal{M}$ подмногообразия $\mathcal{M} \subset \mathbb{R}^n$ в точке $x \in \mathcal{M}$. Два различных вектора $\gamma_1'(0)$ и $\gamma_2'(0)$ реализуются двумя различными кривыми $\gamma_1$ и $\gamma_2$ на многообразие. \label{fig:tangent-space}}
+  \end{center}
+\end{figure}
+
+
+Как показано в работе~\cite{Steinlechner2016}, касательное пространство $T_{\tens{W}} \mathcal{M}_{\rank}$ многообразия тензоров фиксированного ТТ ранга $\mathcal{M}_r$ в точке $\tens{W} \in \mathcal{M}_r$ можно определить как множество тензоров $\tens{Y}$ ТТ-ранга не превосходящего $2 \rank$ определяемых следующими ТТ-ядрами для $k = 2, \ldots, d-1$
+\[
+G_1^{\tens{Y}}[i_1] = \begin{bmatrix}
+\delta \widetilde{U}_1[i_1] & U_1[i_1]
+\end{bmatrix}, ~~ G_k^{\tens{Y}}[i_k] = \begin{bmatrix}
+V_k[i_k] & 0\\
+\delta \widetilde{U}_k[i_k] & U_k[i_k]\\
+\end{bmatrix}, ~~ G_d^{\tens{Y}}[i_d] = \begin{bmatrix}
+V_d[i_d]\\
+\delta \widetilde{U}_d[i_d]\\
+\end{bmatrix},
+\]
+где матрицы $U_k[i_k]$ и $V_k[i_k]$, $k = 1, \ldots, d$ это результат ортогонализации ядра $G^{\tens{W}}_k[i_k]$ слева-на-право и справо-на-лево соответственно (детали по поводу правой и левой ортогонализации см. в работе~\cite{oseledets2011ttMain}), а матрицы $\delta \widetilde{U}_k[i_k]$ это произвольные матрицы размера $\rank_{k-1} \times \rank_k$.
+
 
 Можно построить такой алгоритм построения проекции:
 
