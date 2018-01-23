@@ -319,31 +319,183 @@ P_{T_{\tens{W}} \mathcal{M}_r}\left ( \frac{\partial L}{\partial \tens{W}} \righ
 \end{algorithm}
 
 
-\subsubsection{Initialization \label{sec:exm-initialization}}
-We found that a random initialization for the TT-tensor $\tens{W}$ sometimes freezes the convergence of optimization method (see Sec.~\ref{sec:exp-initialization}).
-We propose to initialize the optimization from the solution of the corresponding linear model~\eqref{eq:linear-model}.
-
-The following theorem shows how to initialize the weight tensor $\tens{W}$ from a linear model.
+\subsubsection{Инициализация \label{sec:exm-initialization}}
+Чтобы избежать преобладания членов высокого порядка во время инициализации модели, обучение модели предлагается инициализировать из так, чтобы модель~\eqref{eq:polynomial-model} совпадала с оптимальной линейной моделью (члены более высоких порядков были равны нулю). Для этого настраиваются веса $\vec{w}, b$ линейной модели с помощью решения (регялризованной) задачи~\eqref{eq:linear-loss}, а веса используются для инициализации весов $\tens{W}$ эквивалентной модели~\eqref{eq:polynomial-model}, причем ТТ-ранг полученного $\tens{W}$ будет равен 2
 \begin{theorem}
 \label{thm:initialization-rank}
-For any $d$-dimensional vector $\vec{w}$ and a bias term $b$ there exist a tensor $\tens{W}$ of TT-rank $2$, such that for any $d$-dimensional vector $\vec{x}$ and the corresponding object-tensor $\tens{X}$ the dot products $\langle \vec{x}, \vec{w} \rangle$ and $\langle \tens{X}, \tens{W} \rangle$ coincide.
+Для любого вектора $\vec{w}$ длины $d$ и параметра сдвига $b$ существует тензор $\tens{W}$ ТТ-ранга $2$ такой, что для любого вектора $\vec{x}$ и соответствующего тензора $\tens{X}$~\eqref{eq:X-definition} скалярные произведения $\langle \vec{x}, \vec{w} \rangle$ и $\langle \tens{X}, \tens{W} \rangle$ равны друг другу. ТТ-ядра тензора~$\tens{W}$ при этом можно построить следующим образом
+\begin{equation}
+\begin{aligned}
+\label{eq:initialization-cores}
+G_1[0] &=
+\left[
+\begin{array}{cc}
+1 & 0\\
+\end{array}
+\right], ~~&
+G_1[1] &=
+\left[
+\begin{array}{cc}
+0 & w_1\\
+\end{array}
+\right], \\
+G_d[0] &=
+\left[
+\begin{array}{c}
+b\\
+1\\
+\end{array}
+\right], ~~&
+G_d[1] &=
+\left[
+\begin{array}{c}
+w_d\\
+0\\
+\end{array}
+\right], ~~\\[0.2cm]
+\forall ~ 2 \leq & ~k \leq d-1 & &\\[-0.05cm]
+G_k[0] &=
+\left[
+\begin{array}{cc}
+1 & 0 \\
+0 & 1 \\
+\end{array}
+\right], ~~&
+G_k[1] &=
+\left[
+\begin{array}{cc}
+0 & w_k \\
+0 & 0 \\
+\end{array}
+\right],
+\end{aligned}
+\end{equation} 
+
 \end{theorem}
-For the proof of Theorem~\ref{thm:initialization-rank}, we refer the reader to Appendix~\ref{sec:app-initialization-rank-proof}.
 
-%\begin{figure*}[t]
-%  % \vskip 0.2in
-%  \centering
-%  \subfigure[Training set\hspace*{2.3cm}]{\includegraphics[width=0.45\textwidth]{images/riemannian_vs_plain_car_train.pdf}}
-%  \hspace*{0.9cm}
-%  \subfigure[Test set\hspace*{2.3cm}]{\includegraphics[width=0.45\textwidth]{images/riemannian_vs_plain_car_validation.pdf}}
-%  \caption{Binarized Car dataset, a comparison between Riemannian optimization and SGD applied to the underlying parameters of the TT-format (the baseline) for the rank-$4$ Exponential Machines.
-%  Numbers in the legend stand for the batch size.
-%  The method marked with `rand init' in the legend (square markers) was initialized from a random TT-tensor (type-1 initialization, see Sec.~\ref{sec:exp-initialization} for details), all other methods were initialized from the solution of ordinary linear logistic regression.
-%  \label{fig:riemannian_vs_plain_car}}
-%  % \vskip -0.2in
-%\end{figure*}
+Начнем с формулировки следующей леммы
+\begin{lemma}
+  \label{lemma:initialization-rank}
+  Для ТТ-ядер~\eqref{eq:initialization-cores} и любого $p = 1, \ldots, d-1$ верно следующее равенство:
+  \begin{equation*}
+  G_1[i_1] \ldots G_p[i_p] =
+  \begin{cases*}
+      \begin{array}{ll}
+      \left[
+      \begin{array}{cc}
+      1 & 0\\
+      \end{array}
+      \right], & \text{if } \sum_{q=1}^p i_q = 0,\\[0.1cm]
+      \left[
+      \begin{array}{cc}
+      0 & 0\\
+      \end{array}
+      \right], & \text{if } \sum_{q=1}^p i_q \geq 2,\\[0.1cm]
+      \left[
+      \begin{array}{cc}
+      0 & w_k\\
+      \end{array}
+      \right], & \text{if } \sum_{q=1}^p i_q = 1,\\
+                          &~~~~~~\!\text{and}~i_k = 1.
+  \end{array}
+  \end{cases*}
+  \end{equation*}
+\end{lemma}
 
-\subsection{Развтие модели \label{sec:exm-model-extension}}
+\begin{proof}
+  Докажем лемму~\ref{lemma:initialization-rank} индукции. Действительно, для $p = 1$ утверждение леммы становится
+  \begin{equation*}
+    G_1[i_1] =
+    \begin{cases*}
+        \begin{array}{ll}
+        \left[
+        \begin{array}{cc}
+        1 & 0\\
+        \end{array}
+        \right], & \text{if } i_1 = 0,\\[0.1cm]
+        \left[
+        \begin{array}{cc}
+        0 & w_1\\
+        \end{array}
+        \right], & \text{if } i_1 = 1,
+    \end{array}
+    \end{cases*}
+  \end{equation*}
+  верное по определению первого ТТ-ядра $G_1[i_1]$.
+
+  Предположим, что утверждение леммы~\ref{lemma:initialization-rank} верно для некоторого $p - 1 \geq 1$.
+  Если $i_p = 0$, тогда $G_p[i_p]$ является еденичной матрицей и $G_1[i_1] \ldots G_p[i_p] = G_1[i_1] \ldots G_{p-1}[i_{p-1}]$. Также, $\sum_{q=1}^p i_q = \sum_{q=1}^{p-1}  i_q$, поэтому равенство сохраняется.
+
+  Если $i_p = 1$, существует $3$ варианта:
+  \begin{itemize}
+    \item Если $\sum_{q=1}^{p-1} i_q = 0$, тогда $\sum_{q=1}^{p} i_q = 1$ и
+    \begin{equation*}
+      G_1[i_1] \ldots G_p[i_p] \,=\, \left[
+      \begin{array}{cc}
+      1 & 0\\
+      \end{array}
+      \right]
+      G_p[1] \,=\, \left[
+      \begin{array}{cc}
+      0 & w_p\\
+      \end{array}
+      \right].
+    \end{equation*}
+    \item Если $\sum_{q=1}^{p-1} i_q \geq 2$, тогда $\sum_{q=1}^{p} i_q\geq 2$ и
+    \begin{equation*}
+      G_1[i_1] \ldots G_p[i_p] \,=\, \left[
+      \begin{array}{cc}
+      0 & 0\\
+      \end{array}
+      \right] G_p[1] \,=\,
+      \left[
+      \begin{array}{cc}
+      0 & 0\\
+      \end{array}
+      \right].
+    \end{equation*}
+    \item Если $\sum_{q=1}^{p-1}i_q = 1$ при $i_k = 1$, тогда $\sum_{q=1}^{p}i_q \geq 2$ и
+    \begin{equation*}
+      G_1[i_1] \ldots G_p[i_p] \,=\, \left[
+      \begin{array}{cc}
+      0 & w_k\\
+      \end{array}
+      \right]
+      G_p[1] \, =\, \left[
+      \begin{array}{cc}
+      0 & 0\\
+      \end{array}
+      \right].
+    \end{equation*}
+  \end{itemize}
+  Что в точности является утверждением леммы~\ref{lemma:initialization-rank}.
+\end{proof}
+
+
+\begin{proof}[Доказательство теоремы \ref{thm:initialization-rank}]
+Произведение всех ТТ-ядер может быть представлено как произведение первых $p = d-1$ умноженное на последнее ТТ-ядро $G_d[i_d]$. Используя результат леммы~\ref{lemma:initialization-rank} получаем
+\begin{equation*}
+\begin{aligned}
+\tensel{W}_{i_1 \ldots i_d} ~&=~ G_1[i_1] \ldots G_{d-1}[i_{d-1}] G_{d}[i_{d}]
+	\\[0.2cm]
+	&=\begin{cases*}
+	    \begin{array}{ll}
+	    b, & \text{if } \sum_{q=1}^d i_q = 0,\\[0.1cm]
+	    0, & \text{if } \sum_{q=1}^d i_q \geq 2,\\[0.1cm]
+	    w_k, & \text{if } \sum_{q=1}^d i_q = 1,\\
+	                        &~~~~~\,\text{and}~i_k = 1.
+	\end{array}
+	\end{cases*}
+\end{aligned}
+\end{equation*}
+Элементы тензора $\tens{W}$ которые соответствуют слагаемым степени $\geq 2$ равны нулю; элементы которые соответствуют коээфициенту перед $x_k$ равны $w_k$; элемент соответсвующий сдвигу равен $\tensel{W}_{0 \ldots 0} = b$.
+
+ТТ-ранг полученного тензора не превосходит $2$ так как размеры полученных ТТ-ядер равны $2 \times 2$.
+\end{proof}
+
+Экспериментальное сравнение методов инициализации для предложенного метода оптимизации приведено в разделе~\ref{sec:exp-initialization}.
+
+\subsection{Обобщение модели \label{sec:exm-model-extension}}
 In this section, we extend the proposed model to handle polynomials of any functions of the features.
 As an example, consider the logarithms of the features in the $2$-dimensional case:
 \begin{equation*}
