@@ -138,7 +138,109 @@ transpose(A) & Возвращает ТТ-представление матриц
 
 
 \paragraph{Проекция матрично-векторного умножения}
-Проекцию матрично-векторного умножения на касательное пространство ТТ-вектора $P_b(Aс)$ можно реализовать использую последовательность из двух операций: матрично-векторное умножение и проекцию за асимптотическую сложность $\compl(b d r_A r_c n (r_A r_c (r_b + n) + r_b^2))$, но при объединении этих двух операций в одну возможно выполнить их асимптотически быстрее за $\compl(b d r_A r_c n (r_c r_b + n r_A r_b + r_b^2)$ операций. В библиотеке T3F быстрая версия данной операции доступна в виде функции \texttt{t3f.project\_matmul(c, b, A)}.
+Проекцию матрично-векторного умножения на касательное пространство ТТ-вектора $P_{T_{\vec{w}} \mathcal{M}_{\rank}} (\mat{A}\vec{b})$ для батча ТТ-векторов $\vec{b}$ длины $b$ можно реализовать использую последовательность из двух операций: матрично-векторное умножение и проекцию за асимптотическую сложность $\compl(b d \rank_{\mat{A}} \rank_{\vec{b}} n (r_A \rank_{\vec{b}} (\rank_{\vec{w}} + n) + \rank_{\vec{w}}^2))$. Однако, в часто встречающемся на практике случае когда $\rank_{\vec{w}} < \rank_{\vec{b}}$, эти две операции можно объединенить в одну чтобы выполнить их асимптотически быстрее за $\compl(b d \rank_{\mat{A}} \rank_{\vec{w}} n (r_A \rank_{\vec{w}} (\rank_{\vec{b}} + n) + \rank_{\vec{b}}^2)$ операций. В библиотеке T3F быстрая версия данной операции доступна в виде функции \texttt{t3f.project\_matmul(b, w, A)}.
+
+Для реализации быстрой версии проекции матрично-векторного умножения, рассмотрим определение операции проекции (см. раздел~\ref{sec:riemannian-help})
+\begin{equation}
+\label{eq:projection-def}
+\delta \widetilde{\mat{U}}_k^L = (I_{\rank_{k-1}n_k} - \mat{U}^L_k (\mat{U}^L_k)^\intercal) (I_{n_k} \otimes \mat{W}_{\leq k-1})^\intercal \mat{Z}^{\langle k \rangle} \mat{W}_{\geq k+1}	
+\end{equation}
+Пусть тензор $\tens{Z}$ представлен в ТТ-формате. Тогда~\eqref{eq:projection-def} можно переписать следующим образом
+%\begin{equation*}
+%\delta \widetilde{\mat{U}}_k[j](\gamma_1, \gamma_2) = (\delta(\alpha_{k-1} - \beta_1)\delta(i_k - j) - \sum_{\beta_3} U_k[j](\beta_1, \gamma_3) \mat{U}_k[i_k](\alpha_{k-1}, \gamma_3) (\delta(i_k - j) U_1[i_1](\alpha_{0}, \alpha_1) \ldots U_{k-1}[i_{k-1}](\alpha_{k-1}, \alpha_k) G_1^{\tens{Z}}[i_1](\beta_0, \beta_1)\ldots G_{d}^{\tens{Z}}[i_d](\beta_{d-1}, \beta_d) U_{k+1}[i_{k+1}](\alpha_{k}, \alpha_{k+1}) \ldots U_{d}[i_{d}](\alpha_{d-1}, \alpha_d)
+%\end{equation*}
+\begin{equation*}
+\begin{aligned}
+\delta \widetilde{\mat{U}}_k[j] = \sum_{i_1, \ldots, i_d}(I_{\rank_{k-1}}\delta(j - i_k) - \mat{U}_k[j] (\mat{U}_k[i_k])^\intercal) \overbrace{(\mat{U}_1[i_1] \ldots \mat{U}_{k-1}[i_{k-1}])^\intercal}^{\vec{a} \text{ размера } r_{k-1}(\tens{W}) \times 1} \cdot\\
+\cdot \underbrace{\mat{G}_1^{\tens{Z}}[i_1]\ldots \mat{G}_{k-1}^{\tens{Z}}[i_{k-1}]}_{\vec{e}^\intercal \text{ размера } 1 \times \rank_{k-1}(\tens{Z})} \mat{G}_{k}^{\tens{Z}}[i_k] \underbrace{\mat{G}_{k+1}^{\tens{Z}}[i_{k+1}]\ldots \mat{G}_{d}^{\tens{Z})}[i_d]}_{\vec{f} \text{ размера } \rank_{k}(\tens{Z}) \times 1} \cdot \underbrace{(\mat{V}_{k+1}[i_{k+1}] \ldots \mat{V}_{d}[i_{d}])^\intercal}_{\vec{g}^\intercal \text{ размера } 1 \times r_k(\tens{W})}
+\end{aligned}
+\end{equation*}
+Рассмотрим внешнее произведение векторов $\vec{a} \vec{e}^\intercal$ (которые вообще говоря зависят от индексов $\vec{a} = \vec{a}_{k-1}[i_1, \ldots, i_{k-1}]$, но эта зависимость была опущена для упрощения обозначений). Вытянув матрицу результата произведения в вектор, можно переписать результат через кронекрово произведение $\text{vec}(\vec{a} \vec{e}^\intercal)^\intercal = \vec{a}^\intercal \otimes \vec{e}^\intercal$, и наоборот, результат внешнего произведения можно получить преобразовав кронекерово произведение векторов в матрицу. Пользуясь свойством смешанного произведения $(A \otimes B)(C \otimes D) = AC \otimes BD$ получаем
+\begin{equation}
+\begin{aligned}
+\label{eq:projection-Ak}
+A_{k-1} :&= \sum_{i_1, \ldots, i_{k-1}}\vec{a}_{k-1}[i_1, \ldots, i_{k-1}] (\vec{e}_{k-1}[i_1, \ldots, i_{k-1}])^\intercal \\
+&= \text{mat}(\sum_{i_1, \ldots, i_{k-1}}(\vec{a}_{k-1}[i_1, \ldots, i_{k-1}])^\intercal \otimes (\vec{e}_{k-1}[i_1, \ldots, i_{k-1}])^\intercal) \\
+&= \text{mat}(\sum_{i_1, \ldots, i_{k-1}}(\mat{U}_1[i_1] \otimes \mat{G}_1^{\tens{Z}}[i_1]) \ldots (\mat{U}_{k-1}[i_{k-1}] \otimes \mat{G}_{k-1}^{\tens{Z}}[i_{k-1}]))\\
+&= \text{mat}((\sum_{i_1}\mat{U}_1[i_1] \otimes \mat{G}_1^{\tens{Z}}[i_1]) \ldots (\sum_{i_{k-1}}\mat{U}_{k-1}[i_{k-1}] \otimes \mat{G}_{k-1}^{\tens{Z}}[i_{k-1}]))
+\end{aligned}
+\end{equation}
+Аналогично, для внешнего произведения векторов $\vec{e} \vec{f}^\intercal$ получаем
+\begin{equation*}
+\begin{aligned}
+B_{k+1} :&= \sum_{i_{k+1}, \ldots, i_d}\vec{f}_{k+1}[i_{k+1}, \ldots, i_{d}] (\vec{g}[i_{k+1}, \ldots, i_{d}])^\intercal\\
+&= \text{mat}(\sum_{i_{k+1}, \ldots, i_d}(\vec{f}_{k+1}[i_{k+1}, \ldots, i_{d}])^\intercal \otimes (\vec{g}_{k+1}[i_{k+1}, \ldots, i_{d}])^\intercal) = \\
+&= \text{mat}(\sum_{i_{k+1}, \ldots, i_d}(\mat{V}_{k+1}[i_{k+1}] \otimes \mat{G}_{k+1}^{\tens{Z}}[i_{k+1}]) \ldots (\mat{V}_{d}[i_{d}] \otimes \mat{G}_{d}^{\tens{Z}}[i_{d}]))\\
+&=\text{mat}((\sum_{i_{k+1}}\mat{V}_{k+1}[i_{k+1}] \otimes \mat{G}_{k+1}^{\tens{Z}}[i_{k+1}]) \ldots (\sum_{i_{d}}\mat{V}_{d}[i_{d}] \otimes \mat{G}_{d}^{\tens{Z}}[i_{d}]))\\
+\end{aligned}
+\end{equation*}
+Таким образом, выражение для $\delta \widetilde{\tens{U}}_k$ можно переписать как
+\begin{equation}
+\begin{aligned}
+\label{eq:proj-precomputed}
+\delta \widetilde{\mat{U}}_k[j] = \sum_{i_k}(I_{\rank_{k-1}}\delta(j - i_k) - \mat{U}_k[j] (\mat{U}_k[i_k])^\intercal) A_{k-1} \mat{G}_{k}^{\tens{Z}}[i_k] B_{k+1}
+\end{aligned}
+\end{equation}
+Так как матрицы $\{A_k\}_{k=1}^d$ имеют размеры $\rank_{k}(\tens{W}) \times \rank_{k}(\tens{Z})$, а матрицы $\{B_k\}_{k=1}^d$ размеры $\rank_{k-1}(\tens{Z}) \times \rank_{k-1}(\tens{W})$, то операция~\eqref{eq:proj-precomputed} может быть выполнена за $\compl(n_k (\rank^2_{k-1}(\tens{W})\rank_{k}(\tens{W}) + \rank^2_{k-1}(\tens{W}) \rank_{k-1}(\tens{Z}) + \rank_{k-1}(\tens{W})\rank_{k-1}(\tens{Z})\rank_{k}(\tens{Z}) + \rank_{k-1}(\tens{W}) \rank_{k}(\tens{Z}) \rank_{k}(\tens{W}))) = \compl(\rank(\tens{W}) \rank^2(\tens{Z}))$ в предположении, что матрицы $\{A_k\}_{k=1}^d$ и $\{A_k\}_{k=1}^d$ предрассчитаны и что $\rank(\tens{W}) \leq \rank(\tens{Z})$.
+
+Вернемся теперь к вопросу о проекции $P_{T_{\vec{w}} \mathcal{M}_{\rank}} (\mat{A}\vec{b})$ матрично-векторного произведения $\vec{z} = \mat{A}\vec{b}$. Пусть, для упрощения обозначений, ТТ-ранги матрицы $\mat{A} \in \mathbb{R}^{n^d \times n^d}$  равны $\rank_{\mat{A}}$, а ТТ-ранги векторов $\vec{w}, \vec{b} \in \mathbb{R}^{n^d}$ равны $\rank_{\vec{w}}$ и $\rank_{\vec{b}}$ соответственно. Как показано в~\cite{oseledets2011ttMain}, ТТ-ядра матричного произведения следующим образом выражаются через ТТ-ядра операндов для $k = 1, \ldots, d$
+\[
+\mat{G}_k^{\vec{z}}[i_k] = \sum_{j_k} \mat{G}_k^{\mat{A}}[i_k, j_k] \otimes \mat{G}_k^{\vec{b}}[j_k]
+\]
+Подставим данные ТТ-ядра в выражение~\eqref{eq:projection-Ak} получим
+\begin{equation*}
+\begin{aligned}
+A_{k-1} = \text{mat}(&(\sum_{i_1}\mat{U}_1[i_1] \otimes (\sum_{j_1}\mat{G}_1^{\mat{A}}[i_1, j_1] \otimes \mat{G}_1^{\vec{b}}[j_1])) \ldots \\
+& (\sum_{i_{k-1}}\mat{U}_{k-1}[i_{k-1}] \otimes (\sum_{j_{k-1}}\mat{G}_{k-1}^{\mat{A}}[i_{k-1}, j_{k-1}] \otimes \mat{G}_{k-1}^{\vec{b}}[j_{k-1}]))
+\end{aligned}
+\end{equation*}
+Заметим, что для матриц $A_k$ справедливо следующее рекуррентное соотношение
+\begin{equation*}
+\begin{aligned}
+A_{k} = \text{mat}(\text{vec}(A_{k-1}) (\sum_{i_{k}}\mat{U}_{k}[i_{k}] \otimes (\sum_{j_k}\mat{G}_k^{\mat{A}}[i_{k}, j_{k}] \otimes \mat{G}_{k}^{\vec{b}}[j_{k}]))
+\end{aligned}
+\end{equation*}
+Или, в поэлементной записи,
+\begin{equation}
+\begin{aligned}
+\label{eq:projection-matvec-elemnwise}
+A_{k}(\alpha_k, \beta_k \gamma_k) = \sum_{\alpha_{k-1}, \beta_{k-1}, \gamma_{k-1}, i_k, j_k} A_{k-1}(\alpha_{k-1}, \beta_{k-1}) \mat{U}_{k}[i_{k}](\alpha_{k-1}, \alpha_{k}) \\
+\cdot \mat{G}_k^{\mat{A}}[i_{k}, j_{k}](\beta_{k-1}, \beta_{k})  \mat{G}_{k}^{\vec{b}}[j_{k}](\gamma_{k-1}, \gamma_{k})
+\end{aligned}
+\end{equation}
+Заметим, что эффективность операции~\eqref{eq:projection-matvec-elemnwise} зависит от порядка суммирования. Так, при суммировании сначала по $i_k$, затем по $\alpha_{k-1}, \beta_{k-1}$, затем по $j_k, \gamma_{k-1}$, ассимтотическая сложность выполнения~\eqref{eq:projection-matvec-elemnwise} составляет $\compl(d n \rank_{\vec{w}} \rank_{\mat{A}}  (\rank^2_{\vec{b}} + \rank_{\vec{w}} \rank_{\mat{A}} n + \rank_{\vec{w}} \rank_{\mat{A}} \rank_{\vec{b}}))$ (в предположении, что $\rank_{\vec{w}} \leq \rank^2_{\mat{A}} \rank_{\vec{b}} n$), а сама операция может быть переписана в виде последовательности матрично матричных умножений (см. алгоритм~\ref{alg:project-matvec}). Аналогичный алгоритм можно построить для вычисления матриц $\mat{B}_k$, что приводит к общей вычислительнлй сложность проекции матрично-веткороного умножения (учитывая что сложность операции~\eqref{eq:proj-precomputed} доминируется вычислением матриц $\mat{A}_k$ и $\mat{B}_k$), составляет $\compl(d n \rank_{\vec{w}} \rank_{\mat{A}}  (\rank^2_{\vec{b}} + \rank_{\vec{w}} \rank_{\mat{A}} n + \rank_{\vec{w}} \rank_{\mat{A}} \rank_{\vec{b}}))$.
+
+Для того, чтобы адаптировать предложенный метод вычисления проекции матрично-векторного произведения к параллельной работе над батчем ТТ-векторов достаточно все матричные умножения в Алгоритме~\ref{alg:project-matvec} заменить на матричные умножения выполняющиеся параллельно и независимо для набора матриц. Такое параллельное умножение матриц доступно в библиотеке TensorFlow в функции \texttt{tensorflow.matmul(A, B)} которая для аргументов размеров $B \times M \times N$ и $B \times N \times K$ возвращает результат независимого произведения матриц $C_i = A_i B_i$ размера $B \times M \times K$, который вычисляется параллельно.
+
+\begin{algorithm}[tb]
+   \caption{Вычисление вспомогательных тензоров $\tens{A}_k$~\eqref{eq:projection-matvec-elemnwise} требующихся для подсчета проекции матрично-векторного произведения $P_{T_{\vec{w}} \mathcal{M}_{\rank}} (\mat{A}\vec{b})$. Сложность работы данного алгоритма составляет $\compl(d n \rank_{\vec{w}} \rank_{\mat{A}}  (\rank^2_{\vec{b}} + \rank_{\vec{w}} \rank_{\mat{A}} n + \rank_{\vec{w}} \rank_{\mat{A}} \rank^2_{\vec{b}}))$ арифметический операций (в предположении, что $\rank_{\vec{w}} \leq \rank^2_{\mat{A}} \rank_{\vec{b}} n$). Для упрощения обозначений предполагается, что все ТТ-ранги каждого из тензоров равны друг другу, например $\rank_k(\vec{w}) = \rank_{\vec{w}}$ для всех $k = 1, \ldots, d-1$.}
+   \label{alg:project-matvec}
+\begin{algorithmic}[1]
+   \REQUIRE ТТ-ядра ТТ-матрицы $\mat{A}$ и ТТ-векторов $\vec{b}$ и $\vec{w}$
+   \ENSURE Тензоры  $\tens{A}_k$ для $k=1,\ldots,d$~\eqref{eq:projection-matvec-elemnwise}
+   \STATE Ортогонализовать TT-ядра $\vec{w}$ справо-налево и слева-направо чтобы получить $U_k, V_k$, $k=1, \ldots, d$ (см.~\cite{oseledets2011ttMain})\algorithmiccomment{$\compl(d n \rank^3_{\vec{w}})$}
+   \STATE $A_0$ = 1
+   \FOR{$k := 1$ \TO $d$}
+   \STATE Переставить размерности $\tens{G}_k^{\mat{A}}$ с $\beta_{k-1}, i_k, j_k, \beta_{k}$ до $\beta_{k-1}, j_k, \beta_{k}, i_k$
+   \STATE Изменить размер тензора $\tens{G}_k^{\mat{A}}$ с $\rank_{\mat{A}} \times n \times \rank_{\mat{A}} \times n$ до $\rank^2_{\mat{A}}n \times n$
+   \STATE Переставить размерности $\tens{U}_k$ с $\alpha_{k-1}, i_k, \alpha_{k}$ до $i_k, \alpha_{k-1}, \alpha_{k}$
+   \STATE Изменить размер тензора $\tens{U}_k$ с $n \times \rank_{\vec{w}} \times \rank_{\vec{w}}$ до $n \times \rank^2_{\vec{w}}$
+   \STATE $\mat{D}_k = \mat{G}_k^{\mat{A}} \mat{U}_k$ \algorithmiccomment{$\compl(\rank^2_{\mat{A}} n^2 \rank^2_{\vec{w}})$}
+   \STATE Изменить размер тензора $\tens{A}_{k-1}$ с $\rank_{\vec{w}} \times \rank_{\mat{A}} \times \rank_{\vec{b}}$ до $\rank_{\vec{w}} \rank_{\mat{A}} \times \rank_{\vec{b}}$
+   \STATE Изменить размер матрицы $\mat{D}_k$ с $\rank^2_{\mat{A}}n \times \rank^2_{\vec{w}}$ до $\rank_{\mat{A}} \times \rank_{\mat{A}} \times n \times \rank_{\vec{w}} \times \rank_{\vec{w}}$
+   \STATE Переставить размерности $\tens{D}_k$ с $\beta_{k-1}, j_k, \beta_{k}, \alpha_{k-1}, \alpha_{k}$ до $j_k, \beta_{k}, \alpha_{k}, \alpha_{k-1},\beta_{k-1}$
+   \STATE Изменить размер тензора $\tens{D}_k$ с $n \times \rank_{\mat{A}} \times \rank_{\vec{w}} \times \rank_{\vec{w}} \times \rank_{\mat{A}}$ до $n \rank_{\mat{A}} \rank_{\vec{w}} \times \rank_{\vec{w}}  \rank_{\mat{A}}$
+   \STATE $\mat{E}_k = \tens{D}_k \mat{A}_{k-1}$ \algorithmiccomment{$\compl(n \rank^2_{\mat{A}} \rank^2_{\vec{w}} \rank_{\vec{b}})$}
+   \STATE Изменить размер матрицы $\mat{E}_k$ с $n \rank_{\mat{A}} \rank_{\vec{w}} \times \rank_{\vec{b}}$ до $n \times \rank_{\mat{A}} \times \rank_{\vec{w}} \times \rank_{\vec{b}}$
+   \STATE Переставить размерности $\tens{E}_k$ с $j_k, \beta_{k}, \alpha_{k}, \gamma_{k-1}$ до $\beta_{k}, \alpha_{k}, \gamma_{k-1}, j_k$
+   \STATE Изменить размер тензора $\tens{E}_k$ с $\rank_{\mat{A}} \times \rank_{\vec{w}}\times \rank_{\vec{b}} \times n$ до $\rank_{\mat{A}} \rank_{\vec{w}} \times \rank_{\vec{b}} n$
+   \STATE Изменить размер тензора $\tens{G}_k^{\vec{b}}$ с $\rank_{\vec{b}} \times n \times \rank_{\vec{b}}$ до $\rank_{\vec{b}} n \times \rank_{\vec{b}}$
+   \STATE $\mat{A}_k = \tens{E}_k \tens{G}_k^{\vec{b}}$ \algorithmiccomment{$\compl(\rank_{\mat{A}} \rank_{\vec{w}} \rank^2_{\vec{b}}n )$}
+   \STATE Изменить размер матрицы $\mat{A}_k$ с $\rank_{\mat{A}} \rank_{\vec{w}} \times \rank_{\vec{b}}$ до $\rank_{\mat{A}} \times \rank_{\vec{w}} \times \rank_{\vec{b}}$
+   \STATE Переставить размерности $\tens{A}_k$ с $\beta_k, \alpha_k, \gamma_k$ до $\alpha_k, \beta_k, \gamma_k$
+   \ENDFOR
+\end{algorithmic}
+\end{algorithm}
 
 
 
@@ -166,9 +268,9 @@ f = G_1^f \ldots G_d^f
 &=\sum_{i_k, j_k, \alpha_{k-1}^b,\alpha_{k-1}^A, \alpha_{k-1}^c} G_k^b[i_k](\alpha_{k-1}^b, \alpha_{k}^b) G_k^A[i_k, j_k](\alpha_{k-1}^A, \alpha_{k}^A) G_k^c[j_k](\alpha_{k-1}^c, \alpha_{k}^c)
 \end{aligned}
 \end{equation}
-Данная операция может быть реализована через последовательность из трех матричных умножений (см. Алг.~\ref{alg:quadratic-form}).
+Данная операция может быть реализована через последовательность из трех матричных умножений (см. Алг.~\ref{alg:bilinear-form}).
 
-Для того, чтобы адаптировать предложенный метод вычисления квадратичной формы к параллельной работе над батчем ТТ-векторов достаточно все матричные умножения в Алгоритме~\ref{alg:quadratic-form} заменить на матричные умножения выполняющиеся параллельно и независимо для набора матриц. Такое параллельное умножение матриц доступно в библиотеке TensorFlow в функции \texttt{tensorflow.matmul(A, B)} которая для аргументов размеров $B \times M \times N$ и $B \times N \times K$ возвращает результат независимого произведения матриц $C_i = A_i B_i$ размера $B \times M \times K$, который вычисляется параллельно.
+Замечание из пункта про вычисление проекции матрично-векторного произведения про адаптирование полученного алгоритма к параллельной работе над батчем ТТ-векторов применимо и в данном случае.
 %
 \begin{algorithm}[tb]
    \caption{Вычисление скалярного произведения $f = b^\intercal A c$ за $\compl(r_A r_c r_b n d (r_b + r_A n + r_c))$ арифметический операций}
@@ -202,7 +304,7 @@ f = G_1^f \ldots G_d^f
 
 
 \paragraph{Матрица попарных билинейных форм}
-По аналогии с вычислением вектора билинейных форм, алгоритм~\ref{alg:quadratic-form} можно адаптировать чтобы  вычислить матрицу попарных билинейных форм заданную как $G_{i,j} = b_i^\intercal A c_j$ для матрицы $A$ и батчей TT-векторов $b$ и $c$ параллельно по размеру батчей (см. Алг.~\ref{alg:pairwise-bilinear-form}). В библиотеке T3F данная операция доступна в виде функции \texttt{t3f.gram\_matrix(b, A)}.
+По аналогии с вычислением вектора билинейных форм, алгоритм~\ref{alg:bilinear-form} можно адаптировать чтобы  вычислить матрицу попарных билинейных форм заданную как $G_{i,j} = b_i^\intercal A c_j$ для матрицы $A$ и батчей TT-векторов $b$ и $c$ параллельно по размеру батчей (см. Алг.~\ref{alg:pairwise-bilinear-form}). В библиотеке T3F данная операция доступна в виде функции \texttt{t3f.gram\_matrix(b, A)}.
 
 \begin{algorithm}[tb]
    \caption{Вычисление матрицы попарных билинейных форм $G_{i,j} = b_i^\intercal A c_j$ за $\compl(B_b B_c \text{batch\_size}_c r_A r_c r_b n d (r_b + r_A n + r_c))$ арифметический операций, где $B_b$ и $B_c$ это размеры батчей ТТ-векторов $b$ и $c$ соответсвенно. Красным выделены отличия от Алг.~\ref{alg:bilinear-form}}
@@ -253,7 +355,7 @@ l_y(X) = \langle  \mathcal{W}_y, \Phi(X) \rangle,
 \end{equation}
 Здесь $f_{\theta_{i_k}}$ это произвольные признаковые преобразования преобразующие входные данные $X$ в вещественное число, а $\theta$ -- настраиваемые параметры модели.
 
-В зависимости от способа паратризации тензора параметров $\mathcal{W}$, формула~\eqref{eq:weights-features-dot} может соотсветсовать различным нейросетевым структурам. Так, в работе~\cite{cohen2016expressive} было показано, что при использовании Канонического Формата~\cite{harshman1970foundations,carroll1970analysis} тензоров для задания $\mathcal{W}$
+В зависимости от способа параметризации тензора параметров $\mathcal{W}$, формула~\eqref{eq:weights-features-dot} может соответстовать различным нейросетевым структурам. Так, в работе~\cite{cohen2016expressive} было показано, что при использовании Канонического Формата~\cite{harshman1970foundations,carroll1970analysis} тензоров для задания $\mathcal{W}$
 \begin{equation}\label{eq:candec}
 \mathcal{W}^{i_1 i_2 \hdots i_d} = \sum_{\alpha=1}^{r} \textbf{v}_{1, \alpha}^{i_1}\textbf{v}_{2, \alpha}^{i_2} \hdots 
  \textbf{v}_{d, \alpha}^{i_d}, \quad \textbf{v}_{i, \alpha} \in \mathbb{R}^{n_i}.
@@ -359,7 +461,7 @@ $$
 & \parbox{5.8cm}{\centering\scriptsize сила парных потенциалов~$f$ }
 \end{tabular}
 &
-% \includegraphics[width=1.8cm]{figures/Z_legend_worked3.pdf}
+% \includegraphics[width=1.8cm]{images/Z_legend_worked3.pdf}
 \\
 (a)
 &
@@ -600,4 +702,172 @@ Instead of compressing existing architectures one can use low-rank methods to be
 We use L$2$-regularization term for the TT-cores elements with $\lambda = 0.0005$ to prevent ambiguities in the TT-format. To initialize all the parameters (the elements of the TT-cores for TT-layers and the weight matrices for fully-connected layers) we use Gaussian noise. We train TensorNets with stochastic gradient descent with momentum (with coefficient $0.9$) and tune the learning rate by hand on the validation set.
 
 
-%\section{??Реализация тензорных полиномиальных моделей} \label{sec:nn-code}
+\section{Реализация тензорных полиномиальных моделей} \label{sec:exm-experiments}
+
+%\begin{figure*}[t]
+%  % \vskip 0.2in
+%  \centering
+%  \subfigure[Training set\hspace*{2.3cm}]{\includegraphics[width=0.45\textwidth]{images/riemannian_vs_plain_car_train.pdf}}
+%  \hspace*{0.9cm}
+%  \subfigure[Test set\hspace*{2.3cm}]{\includegraphics[width=0.45\textwidth]{images/riemannian_vs_plain_car_validation.pdf}}
+%  \caption{Binarized Car dataset, a comparison between Riemannian optimization and SGD applied to the underlying parameters of the TT-format (the baseline) for the rank-$4$ Exponential Machines.
+%  Numbers in the legend stand for the batch size.
+%  The method marked with `rand init' in the legend (square markers) was initialized from a random TT-tensor (type-1 initialization, see Sec.~\ref{sec:exp-initialization} for details), all other methods were initialized from the solution of ordinary linear logistic regression.
+%  \label{fig:riemannian_vs_plain_car}}
+%  % \vskip -0.2in
+%\end{figure*}
+We released a Python implementation of the proposed algorithm and the code to reproduce the experiments\footnote{\url{https://github.com/anonymized}}.
+For the operations related to the TT-format, we used the TT-Toolbox\footnote{\url{https://github.com/oseledets/ttpy}}.
+
+
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_hiv_train.pdf}
+        \caption{обучающая выборка}
+    \end{subfigure}
+    \begin{subfigure}[b]{\textwidth}
+        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_hiv_validation.pdf}
+        \caption{валидационная выборка}
+    \end{subfigure}
+    \caption{HIV dataset, a comparison between Riemannian optimization and SGD applied to the underlying parameters of the TT-format (the baseline) for the rank-$4$ Exponential Machines.
+  Numbers in the legend stand for the batch size.
+  The methods marked with `rand init' in the legend (square and triangle markers) were initialized from a random TT-tensor from two different distributions (see Sec.~\ref{sec:exp-initialization}), all other methods were initialized from the solution of ordinary linear logistic regression.}\label{fig:riemannian_vs_plain_hiv}
+\end{figure}
+
+%\begin{figure*}[t]
+%  \centering
+%  \subfigure[Training set\hspace*{2.3cm}]{\includegraphics[width=0.45\textwidth]{images/riemannian_vs_plain_hiv_train.pdf}}
+%  \hspace*{0.9cm}
+%  \subfigure[\hspace*{2.3cm}]{\includegraphics[width=0.45\textwidth]{images/riemannian_vs_plain_hiv_validation.pdf}}
+%  \caption{HIV dataset, a comparison between Riemannian optimization and SGD applied to the underlying parameters of the TT-format (the baseline) for the rank-$4$ Exponential Machines.
+%  Numbers in the legend stand for the batch size.
+%  The methods marked with `rand init' in the legend (square and triangle markers) were initialized from a random TT-tensor from two different distributions (see Sec.~\ref{sec:exp-initialization}), all other methods were initialized from the solution of ordinary linear logistic regression.
+%  \label{fig:riemannian_vs_plain_hiv}}
+%\end{figure*}
+%
+%\subsection{Datasets \label{sec:exp-datasets}}
+%The datasets used in the experiments are
+%\begin{enumerate}
+%  \item \textbf{UCI~\citep{Lichman2013UCI} Car dataset} is a classification problem with $1728$ objects and $21$ binary features (after one-hot encoding).
+%  We randomly split the data into $1382$ training and $346$ test objects.
+%  For simplicity, we binarized the labels: we picked the first class (`unacc') and made a one-versus-rest binary classification problem from the original Car dataset.
+%
+%  \item \textbf{UCI~\citep{Lichman2013UCI} HIV dataset} is a binary classification problem with $1625$ objects and $160$ features, which we randomly split into $1300$ training and $325$ test objects.
+%
+%  \item \textbf{Synthetic data.} We generated $100\,000$ train and $100\,000$ test objects with $30$ features.
+%  Each entry of the data matrix $X$ was independently sampled from $\{-1, +1\}$ with equal probabilities $0.5$.
+%  We also uniformly sampled $20$ subsets of features (interactions) of order $6$: $j^1_1, \ldots, j^1_{6}, \ldots, j^{20}_1, \ldots, j^{20}_{6} \sim \mathcal{U}\{1, \ldots, 30\}$.
+%  We set the ground truth target variable to a deterministic function of the input: $y(\vec{x}) = \sum_{z=1}^{20} \varepsilon_z \prod_{h=1}^{6} x_{j^z_h}$, and sampled the weights of the interactions from the uniform distribution: $\varepsilon_1, \ldots, \varepsilon_{20} \sim \mathcal{U}(-1, 1)$.
+%
+%  \item \textbf{MovieLens 100K.} MovieLens 100K is a recommender system dataset with $943$ users and $1\,682$ movies~\citep{harper2015movielens}.
+%  We followed~\cite{blondel2016hofm} in preparing the features and in turning the problem into binary classification.
+%  For users, we treated age (rounded to decades), living area (the first digit of the zipcode), gender, and occupation as categorical features.
+%  For movies, we used the release year (rounded to decades) and genres.
+%  Original ratings were binarized using $5$ as a threshold.
+%  This results in $21\,200$ positive samples, half of which were used for training (with the equal amount of sampled negative examples) and the rest were used for testing.
+%\end{enumerate}
+%
+%
+%\subsection{Riemannian optimization \label{sec:exp-riemannian-optimization}}
+%In this experiment, we compared two approaches to training the model: Riemannian optimization~(Sec.~\ref{sec:riemannian-optimization}) vs. the stochastic gradient descent (SGD) baseline~(Sec.~\ref{sec:learning}).
+%In this and later experiments we tuned the learning rate of both Riemannian and SGD optimizers with respect to the training loss after 100 iterations by the grid search.
+%
+%On the Car and HIV datasets we turned off the regularization ($\lambda = 0$) and used rank $r = 4$.
+%We report that on the Car dataset Riemannian optimization (learning rate $\alpha = 40$) converges faster and achieves better final point than the baseline (learning rate $\alpha = 0.03$) both in terms of the training and test losses~(Fig.~\ref{fig:riemannian_vs_plain_car}a,b).
+%On the HIV dataset Riemannian optimization (learning rate $\alpha = 800$) converges to the value $10^{-4}$ around $20$ times faster than the baseline~(learning rate $\alpha = 0.001$, see Fig.~\ref{fig:riemannian_vs_plain_hiv}a), but the model overfitts to the data~(Fig.~\ref{fig:riemannian_vs_plain_hiv}b).
+%
+%The results on the synthetic dataset with high-order interactions confirm the superiority of the Riemannian approach over SGD -- we failed to train the model at all with the SGD optimizer~(Fig.~\ref{fig:riemannian-vs-plain-synthetic}).
+%
+%On the MovieLens 100K dataset, we have only used SGD-type algorithms, because using the one-hot feature encoding is much slower than using the categorical version (see Sec.~\ref{sec:model-extension}), and we have yet to implement the support for categorical features for the Riemannian optimizer.
+%On the bright side, prototyping the categorical version of ExM in TensorFlow allowed us to use a GPU accelerator.
+%
+%
+%\subsection{Initialization \label{sec:exp-initialization}}
+%In this experiment, we compared random initialization with the initialization from the solution of the corresponding linear problem~(Sec.~\ref{sec:initialization}).
+%We explored two ways to randomly initialize a TT-tensor: 1) filling its TT-cores with independent Gaussian noise; 2) initializing $\tens{W}$ to represent a linear model with random coefficients (sampled from a standard Gaussian).
+%We report that on the Car dataset type-1 random initialization slowed the convergence compared to initialization from the linear model solution~(Fig.~\ref{fig:riemannian_vs_plain}a), while on the HIV dataset the convergence was completely frozen in case of the type-1 initialization~(see Fig.~\ref{fig:riemannian_vs_plain}b).
+%
+%Two possible reasons for this effect are:
+%a) the vanishing and exploding gradients problem~\citep{bengio1994vanishing} that arises when dealing with a product of a large number of factors ($160$ in the case of the HIV dataset);
+%b) by initializing the model in such a way that high-order terms dominate we may force the gradient-based optimization to focus on high-order terms at the beginning, while it may be beneficial to start with determining low-order terms instead.
+%
+%Type-2 initialization (a random linear model) worked on par with initialization from the solution of the linear problem on the Car, HIV, and synthetic datasets~(Fig.~\ref{fig:riemannian_vs_plain_car},~\ref{fig:riemannian_vs_plain_hiv},~\ref{fig:riemannian-vs-plain-synthetic}).
+%This may indicate that the problem with type-1 initialization is indeed not in the randomness per se, but in giving too much attention to high-order terms at the beginning of the optimization process.
+%
+%
+%\subsection{Comparison to other approaches \label{sec:exp-comparison}}
+%On the synthetic dataset with high-order interactions we compared Exponential Machines (the proposed method) with scikit-learn implementation~\citep{scikit-learn} of logistic regression, random forest, and kernel SVM; FastFM implementation~\citep{bayer2015fastfm} of $2$-nd order Factorization Machines; our implementation of high-order Factorization Machines\footnote{\url{https://github.com/anonymized}}; and a feed-forward neural network implemented in TensorFlow~\citep{tensorflow2015-whitepaper}.
+%We used $6$-th order FM with the Adam optimizer~\citep{kingma2014adam} for which we had chosen the best rank ($20$) and learning rate ($0.003$) based on the training loss after the first $50$ iterations.
+%We tried several feed-forward neural networks with ReLU activations and up to $4$ fully-connected layers and $128$ hidden units.
+%We compared the models based on the Area Under the Curve (AUC) metric since it is applicable to all methods and is robust to unbalanced labels.
+%We report that our model works on par with high-order Factorization Machines and outperforms all the baselines in the case of limited training time budget (yielding $0.85$ test AUC in 1831 seconds, see Tbl.~\ref{tbl:synthetic-comparison}).
+%
+%\begin{table}[t]
+%\caption{A comparison between models on synthetic data with high-order interactions (Sec.~\ref{sec:exp-comparison}).
+%We report the inference time on $100000$ test objects in the last column.}
+%\label{tbl:synthetic-comparison}
+%% \vskip 0.15in
+%\begin{center}
+%\begin{small}
+%\begin{sc}
+%\begin{tabular}{l*{3}{c}}
+%\hline
+%\abovespace\belowspace
+%Method & Test AUC &
+%\parbox{1.4cm}{Training\\ time (s)} &
+%\parbox{1.4cm}{Inference\\ time (s)} \\[0.2cm]
+%\hline
+%\abovespace
+%Log. reg. & $0.50$ & $0.4$ & $0.0$ \\
+%RF & $0.55$ & $21.4$ & $6.5$ \\
+%Neural Network & $0.50$ & $47.2$ & $0.1$ \\
+%SVM RBF & $0.50$ & $2262.6$ & $5380$ \\
+%SVM poly. 2 & $0.50$ & $1152.6$ & $4260$ \\
+%SVM poly. 6 & $0.56$ & $4090.9$ & $3774$ \\
+%2-nd order FM & $0.50$ & $638.2$ & $0.5$ \\
+%6-th order FM & $0.57$ & $549$ & $3$ \\
+%6-th order FM & $0.86$ & $6039$ & $3$ \\
+%6-th order FM & $\textbf{0.96}$ & $38918$ & $3$ \\
+%ExM rank 3 & $0.79$ & $65$ & $0.2$ \\
+%ExM rank 8 & $0.85$ & $1831$ & $1.3$ \\
+%\belowspace
+%ExM rank 16 & $\textbf{0.96}$ & $48879$ & $3.8$ \\
+%\hline
+%\end{tabular}
+%\end{sc}
+%\end{small}
+%\end{center}
+%% \vskip -0.1in
+%\end{table}
+%
+%On the MovieLens 100K dataset we used the categorical features representation described in Sec.~\ref{sec:model-extension}.
+%Our model obtained $0.784$ test AUC with the TT-rank equal $10$ in $273$ seconds on a Tesla K40 GPU (the inference time is $0.3$ seconds per $78800$ test objects); our implentation of 3-rd order FM obtained $0.782$; logistic regression obtained $0.782$; and \cite{blondel2016hofm} reported $0.786$ with 3-rd order FM on the same data.
+%
+%
+%\begin{figure*}[t]
+%  % \vskip 0.2in
+%  \centering
+%  \subfigure[Training set\hspace*{3.5cm}]{\includegraphics[width=0.49\textwidth]{images/riemannian_vs_plain_synthetic_train.pdf}}
+%  \hspace*{0.1cm}
+%  \subfigure[Test set\hspace*{3.3cm}]{\includegraphics[width=0.49\textwidth]{images/riemannian_vs_plain_synthetic_test.pdf}}
+%  \caption{A comparison between Riemannian optimization and SGD applied to the underlying parameters of the TT-format (the baseline) for the rank-$3$ Exponential Machines on the synthetic dataset with high order interactions.
+%  The first number in each legend entry stands for the batch size.
+%  The method marked with `rand init' in the legend (triangle markers) was initialized from a random linear model, all other methods were initialized from the solution of ordinary linear logistic regression.
+%  See details in Sec.~\ref{sec:exp-riemannian-optimization} and~\ref{sec:exp-initialization} \label{fig:riemannian-vs-plain-synthetic}}
+%  % \vskip -0.2in
+%\end{figure*}
+%
+%\subsection{TT-rank \label{sec:exp-tt-rank}}
+%The TT-rank is one of the main hyperparameters of the proposed model.
+%Two possible strategies can be used to choose it: grid-search or DMRG-like algorithms (see Related Work, Sec.~\ref{sec:related-work}).
+%In our experiments we opted for the former and observed that the model is fairly robust to the choice of the TT-rank (see Fig.~\ref{fig:rank-vs-accuracy}), but a too small TT-rank can hurt the accuracy (see Tbl.~\ref{tbl:synthetic-comparison}).
+%
+%\begin{figure}[t]
+%  % \vskip 0.2in
+%  \begin{center}
+%  \includegraphics[width=0.25\textwidth]{images/rank_vs_accuracy.pdf}
+%  \caption{The influence of the TT-rank on the test AUC for the MovieLens 100K dataset. \label{fig:rank-vs-accuracy}}
+%   \end{center}
+%  %  \vskip -0.2in
+%\end{figure}
