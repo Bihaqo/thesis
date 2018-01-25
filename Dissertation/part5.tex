@@ -638,13 +638,8 @@ Instead of compressing existing architectures one can use low-rank methods to be
 
 В качестве бейзлайна рассматривается сжатие первого полносвязного слоя при помощи ограничения матричного ранга матрицы слоя~\cite{Jimmy2014lowRankSNN}, что приводит к существенному снижению точности даже при использовании относительно высокого ранга 50 (ошибка увеличивается с 11.2 до 14.9). В другом методе сжатия нейросетей~\cite{yang2014deep} было получено сжатие сети в 2-3 раза без увеличения ошибка классификации, однако в их работе использовалась другая архитектура базовой сети~\cite{Krizhevsky2012AlexNet}, так что результаты не сравнимы напрямую.
 
-% We use deep convolutional neural networks vgg-16 and vgg-19~\cite{simonyan15} as reference models\footnote{After we started to experiment on the vgg-16 network the vgg-* networks improved and thus we report the results on a slightly outdated version of vgg-16 and modern version of vgg-19.}. The networks consist of two parts: the convolutional (the first layers) and the fully-connected part (the remaining layers). For both networks the second part consist of $3$ fully-connected layers of sizes $25088 \times 4096$, $4096 \times 4096$ and $4096 \times 1000$. We reshape $25088$-dimensional vectors to $2 \times 7 \times 8 \times 8 \times 7 \times 4$ tensors $\texttt{Alex: need to comment why this unbalances shape.}$ and $4096$-dimensional vectors to $4 \times 4 \times 4 \times 4 \times 4 \times 4$ tensors.
-
-% We fix the convolutional part to the values obtained from vgg-* training and train one TT-layer followed by two fully-connected layers from a random initialization. Then we fix the TT-layer, substitute the second fully-connected layer with a TT-layer, and train the last two layers (TT-layer and remaining fully-connected layer) starting from random initialization of their weights.
 
 
-% We reduce the number of parameters in the largest fully-connected layer matrix by the factor of $194\,622$ (from $25088 \times 4096$ parameters to $528$) while increasing the top 1 error from $30.9$ to $31.54$. By compressing one (two) layers we reduce the number of parameters in the whole network by the factor of $3.9$ ($7.3$), see Table~\ref{tbl:imagenet-vgg-layer}. As a baseline we consider restricting matrix rank of the weight matrices (as in sec.~\ref{sec:mnist-shapes}). The accuracy and the compression rates for TensorNet are significantly better compared to the matrix rank baseline. Surprisingly even the TT-rank $1$ model outperforms all the matrix rank baselines.
-%Even without fine-tuning our model can achieve higher compression rates with less relative accuracy decrease, especially when comparing the fully-connected part compression (tbl.~\ref{tbl:fastfood}).
 
 % \begin{table}
 %     \begin{center}
@@ -672,6 +667,11 @@ Instead of compressing existing architectures one can use low-rank methods to be
     CPU TT-layer   & $0.124$ & $9.47$\\
     GPU fully-connected layer   & $0.27$ & $3.3$\\
     GPU TT-layer   & $0.192$ & $1.286$\\
+    \hline
+    CPU fully-connected layer   & $4.1$ & $4.9$ \rule{0pt}{1.0\normalbaselineskip}\\
+    CPU TT-layer   & $0.19$ & $6.1$\\
+    GPU fully-connected layer   & $0.08$ & $0.4$\\
+    GPU TT-layer   & $0.04$ & $0.4$\\
     \end{tabular}
     \end{center}
     \caption{Inference time for the $25088 \times 4096$ fully-connected layer and its corresponding TT-layer with all the TT-ranks equal $4$. The memory usage for feeding forward one image is $392$MB for the fully-connected layer and $0.766$MB for the TT-layer. \label{tbl:imegenet-inference} \vspace{-0.5cm}}
@@ -691,10 +691,8 @@ Instead of compressing existing architectures one can use low-rank methods to be
 % Conv big: 0.032895 0.032934 0.033011, mean 0.032957 +- 0.000124
 % FC big: 0.035456 0.035477 0.035502, mean 0.035482 +- 0.000037
 
-%\subsection{Implementation details}
-%In all experiments we use our MATLAB extension to the MatConvNet framework~\cite{matconvnet}. For operations related to the TT-format we use the TT-Toolbox%\footnote{\url{https://github.com/oseledets/TT-Toolbox}}
-%implemented in MATLAB as well. The experiments were performed on a computer with a quad-core Intel Core i5-4460 CPU, 16 GB RAM and a single NVidia Geforce GTX 980 GPU.
-%We report the running times and the memory usage at the forward pass of the TT-layer and the baseline fully-connected layer in Table~\ref{tbl:imegenet-inference}.
+
+
 
 % TODO: say what was the learning procedure? weight decay, learning rate, momentum, etc
 
@@ -704,20 +702,20 @@ We use L$2$-regularization term for the TT-cores elements with $\lambda = 0.0005
 
 \section{Реализация тензорных полиномиальных моделей} \label{sec:exm-experiments}
 
-%\begin{figure*}[t]
-%  % \vskip 0.2in
-%  \centering
-%  \subfigure[Training set\hspace*{2.3cm}]{\includegraphics[width=0.45\textwidth]{images/riemannian_vs_plain_car_train.pdf}}
-%  \hspace*{0.9cm}
-%  \subfigure[Test set\hspace*{2.3cm}]{\includegraphics[width=0.45\textwidth]{images/riemannian_vs_plain_car_validation.pdf}}
-%  \caption{Binarized Car dataset, a comparison between Riemannian optimization and SGD applied to the underlying parameters of the TT-format (the baseline) for the rank-$4$ Exponential Machines.
-%  Numbers in the legend stand for the batch size.
-%  The method marked with `rand init' in the legend (square markers) was initialized from a random TT-tensor (type-1 initialization, see Sec.~\ref{sec:exp-initialization} for details), all other methods were initialized from the solution of ordinary linear logistic regression.
-%  \label{fig:riemannian_vs_plain_car}}
-%  % \vskip -0.2in
-%\end{figure*}
-We released a Python implementation of the proposed algorithm and the code to reproduce the experiments\footnote{\url{https://github.com/anonymized}}.
-For the operations related to the TT-format, we used the TT-Toolbox\footnote{\url{https://github.com/oseledets/ttpy}}.
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_car_train.pdf}
+        \caption{обучающая выборка}
+    \end{subfigure}
+    \begin{subfigure}[b]{\textwidth}
+        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_car_validation.pdf}
+        \caption{валидационная выборка}
+    \end{subfigure}
+    \caption{Бинаризованный набор данных Car, сравнение стохастической римановой оптимизации с стохастическим градиентным спуском примененным к элементам ТТ-ядер для модели рекуррентной нейросети ТТ-ранга-$4$. Числа в легенде отражают размер мини-батча ($M$, число объектов использующихся на каждом шаге стохастической оптимизации). Графики отмеченные как `сл. иниц.' (квадратные  маркеры) отвечают запускам метода оптимизации со случайного ТТ-тензора ранга 4 (ядра которого заполнены стандартным нормальным шумом). \alert{todo: перевести легенду и выкинуть одну из инициализаций}.
+Все остальные кривые отвечают запускам инициализированным с решения линейной версии задачи (см. раздел~\ref{sec:exm-initialization}).}\label{fig:riemannian_vs_plain_car}
+\end{figure}
+
 
 
 \begin{figure}
@@ -730,55 +728,43 @@ For the operations related to the TT-format, we used the TT-Toolbox\footnote{\ur
         \includegraphics[width=\textwidth]{images/riemannian_vs_plain_hiv_validation.pdf}
         \caption{валидационная выборка}
     \end{subfigure}
-    \caption{HIV dataset, a comparison between Riemannian optimization and SGD applied to the underlying parameters of the TT-format (the baseline) for the rank-$4$ Exponential Machines.
-  Numbers in the legend stand for the batch size.
-  The methods marked with `rand init' in the legend (square and triangle markers) were initialized from a random TT-tensor from two different distributions (see Sec.~\ref{sec:exp-initialization}), all other methods were initialized from the solution of ordinary linear logistic regression.}\label{fig:riemannian_vs_plain_hiv}
+    \caption{Набор данных HIV, сравнение стохастической римановой оптимизации с стохастическим градиентным спуском примененным к элементам ТТ-ядер для модели рекуррентной нейросети ТТ-ранга-$4$. Числа в легенде отражают размер мини-батча ($M$, число объектов использующихся на каждом шаге стохастической оптимизации). Графики отмеченные как `сл. иниц.' (квадратные  маркеры) отвечают запускам метода оптимизации со случайного ТТ-тензора ранга 4 (ядра которого заполнены стандартным нормальным шумом). \alert{todo: перевести легенду и выкинуть одну из инициализаций}.
+Все остальные кривые отвечают запускам инициализированным с решения линейной версии задачи (см. раздел~\ref{sec:exm-initialization}).}\label{fig:riemannian_vs_plain_hiv}
 \end{figure}
 
-%\begin{figure*}[t]
-%  \centering
-%  \subfigure[Training set\hspace*{2.3cm}]{\includegraphics[width=0.45\textwidth]{images/riemannian_vs_plain_hiv_train.pdf}}
-%  \hspace*{0.9cm}
-%  \subfigure[\hspace*{2.3cm}]{\includegraphics[width=0.45\textwidth]{images/riemannian_vs_plain_hiv_validation.pdf}}
-%  \caption{HIV dataset, a comparison between Riemannian optimization and SGD applied to the underlying parameters of the TT-format (the baseline) for the rank-$4$ Exponential Machines.
-%  Numbers in the legend stand for the batch size.
-%  The methods marked with `rand init' in the legend (square and triangle markers) were initialized from a random TT-tensor from two different distributions (see Sec.~\ref{sec:exp-initialization}), all other methods were initialized from the solution of ordinary linear logistic regression.
-%  \label{fig:riemannian_vs_plain_hiv}}
-%\end{figure*}
-%
-%\subsection{Datasets \label{sec:exp-datasets}}
-%The datasets used in the experiments are
-%\begin{enumerate}
-%  \item \textbf{UCI~\citep{Lichman2013UCI} Car dataset} is a classification problem with $1728$ objects and $21$ binary features (after one-hot encoding).
-%  We randomly split the data into $1382$ training and $346$ test objects.
-%  For simplicity, we binarized the labels: we picked the first class (`unacc') and made a one-versus-rest binary classification problem from the original Car dataset.
-%
-%  \item \textbf{UCI~\citep{Lichman2013UCI} HIV dataset} is a binary classification problem with $1625$ objects and $160$ features, which we randomly split into $1300$ training and $325$ test objects.
-%
-%  \item \textbf{Synthetic data.} We generated $100\,000$ train and $100\,000$ test objects with $30$ features.
-%  Each entry of the data matrix $X$ was independently sampled from $\{-1, +1\}$ with equal probabilities $0.5$.
-%  We also uniformly sampled $20$ subsets of features (interactions) of order $6$: $j^1_1, \ldots, j^1_{6}, \ldots, j^{20}_1, \ldots, j^{20}_{6} \sim \mathcal{U}\{1, \ldots, 30\}$.
-%  We set the ground truth target variable to a deterministic function of the input: $y(\vec{x}) = \sum_{z=1}^{20} \varepsilon_z \prod_{h=1}^{6} x_{j^z_h}$, and sampled the weights of the interactions from the uniform distribution: $\varepsilon_1, \ldots, \varepsilon_{20} \sim \mathcal{U}(-1, 1)$.
-%
-%  \item \textbf{MovieLens 100K.} MovieLens 100K is a recommender system dataset with $943$ users and $1\,682$ movies~\citep{harper2015movielens}.
-%  We followed~\cite{blondel2016hofm} in preparing the features and in turning the problem into binary classification.
-%  For users, we treated age (rounded to decades), living area (the first digit of the zipcode), gender, and occupation as categorical features.
-%  For movies, we used the release year (rounded to decades) and genres.
-%  Original ratings were binarized using $5$ as a threshold.
-%  This results in $21\,200$ positive samples, half of which were used for training (with the equal amount of sampled negative examples) and the rest were used for testing.
-%\end{enumerate}
-%
-%
-%\subsection{Riemannian optimization \label{sec:exp-riemannian-optimization}}
-%In this experiment, we compared two approaches to training the model: Riemannian optimization~(Sec.~\ref{sec:riemannian-optimization}) vs. the stochastic gradient descent (SGD) baseline~(Sec.~\ref{sec:learning}).
-%In this and later experiments we tuned the learning rate of both Riemannian and SGD optimizers with respect to the training loss after 100 iterations by the grid search.
-%
-%On the Car and HIV datasets we turned off the regularization ($\lambda = 0$) and used rank $r = 4$.
-%We report that on the Car dataset Riemannian optimization (learning rate $\alpha = 40$) converges faster and achieves better final point than the baseline (learning rate $\alpha = 0.03$) both in terms of the training and test losses~(Fig.~\ref{fig:riemannian_vs_plain_car}a,b).
-%On the HIV dataset Riemannian optimization (learning rate $\alpha = 800$) converges to the value $10^{-4}$ around $20$ times faster than the baseline~(learning rate $\alpha = 0.001$, see Fig.~\ref{fig:riemannian_vs_plain_hiv}a), but the model overfitts to the data~(Fig.~\ref{fig:riemannian_vs_plain_hiv}b).
-%
-%The results on the synthetic dataset with high-order interactions confirm the superiority of the Riemannian approach over SGD -- we failed to train the model at all with the SGD optimizer~(Fig.~\ref{fig:riemannian-vs-plain-synthetic}).
-%
+\subsection{Наборы данных \label{sec:exp-datasets}}
+Наборы данных используемые в экспериментах $\alert{todo: compare with RNN wrt learning speed?}$
+\begin{enumerate}
+  \item Выборка \textbf{UCI~\cite{Lichman2013UCI} Car} это задача  классификации с $1728$ объектами и $21$ бинарными признаками (после превращения `one-hot' преобразование, которое заменяет категориальный признак который может принимать $K$ возможных значений на бинарный вектор длины $K$ такой что только один элемент этого вектора ненулевой в любом объекте).
+  Данные были случайным образом разделены на  $1382$ обучающих  и $346$ валидационных объекта. Метки датасета были бинаризованы путем конвертации метки исходного первого класса в `0' и всех остальных классов в `1'.
+
+  \item Выборка \textbf{UCI~\cite{Lichman2013UCI} HIV} это задача бинарной классификации с $1625$ объектами и $160$ признаками, которая была разбита на $1300$ обучающих и $325$ валидаионных объекта.
+
+  \item \textbf{Сгенерированные данные.} Были сгенерированны $100\,000$ обучающих и $100\,000$ валидационных объекта с $30$ признаками.
+  Каждый элемент матрицы объект-признак $X$ был независимо сгенерирован из равномерного распределения над $\{-1, +1\}$.
+  Так же были случайно выбраны $20$ подмножеств признаков порядка 6 из равномерного распределения: $j^1_1, \ldots, j^1_{6}, \ldots, j^{20}_1, \ldots, j^{20}_{6} \sim \mathcal{U}\{1, \ldots, 30\}$.
+  Целевой признак был установлен в детерминированную функцию входа: $y(\vec{x}) = \sum_{z=1}^{20} \varepsilon_z \prod_{h=1}^{6} x_{j^z_h}$, где веса мономов были сгенерированны из равномерного распределения: $\varepsilon_1, \ldots, \varepsilon_{20} \sim \mathcal{U}(-1, 1)$.
+
+%  \item \textbf{MovieLens 100K.} MovieLens 100K это выборка данных рекомендательной системы в которой есть $943$ пользователей и $1\,682$ фильмов~\cite{harper2015movielens}.
+%  Выборка была превращена в задачу бинарной классификации, а признаки были обработанны так же, как и в работе~\cite{blondel2016hofm}:
+%  \begin{enumerate}
+%  \item Для пользователей в качестве признаков использовался год округленный до десятилетий, район (первая цифра индекса), пол и занятость как категориальные признаки.
+%  \item Для фильмов, в качестве признаков использовался год выхода на экран (округленный до десятилетий) и жанр.
+%  \item Исходные рейтинги фильмов были бинаризованы по порогу $5$.
+%  \end{enumerate}
+%  Итоговая выборка после обработки состоит из $21\,200$ положительных примеров ("фильм понравился"), половина из которых использовалась для обучения вместе с равным количеством отрицательных примеров, а вторая половина для валидации.
+\end{enumerate}
+
+
+\subsection{Риманова оптимизация \label{sec:exp-riemannian-optimization}}
+В данном эксперименте сравниваются два подхода к обучению модели~\eqref{eq:polynomial-model}: стохастическая риманова оптимизация (см. раздел~\ref{sec:exm-riemannian-optimization}) и стохастический градиентный спуск примененный к элементам ТТ-ядер. В обоих методах для выбора длины шага оптимизации возможные шаги перебирались по сетке и выбирался наилучший согласно качеству на обучающей выборке через 100 шагов оптимизации.
+
+На выборках Car и HIV параметр регуляризации устанавливался $\lambda = 0$, а ТТ-ранг $r = 4$.
+На выборке Car метод стохастической оптимизации (оптимальная длина шага для которого составила $\alpha = 40$) сходится быстрее и к лучшему значению функционала чем альтернативный метод (оптимальная длина шага для которого составила $\alpha = 0.03$) как с точки зрения обучающей, так и с точки зрения валидационной ошибки.~(Рис.~\ref{fig:riemannian_vs_plain_car}a,b).
+На выборке HIV стохастическая риманова оптимизация  (с длиной шага $\alpha = 800$) сходится к значения функционала $10^{-4}$ в $20$ раз быстрее альтернативного метода оптимизации~(длина шага которого составила $\alpha = 0.001$, см Рис.~\ref{fig:riemannian_vs_plain_hiv}a), однако модель переобучается под данные~(Рис.~\ref{fig:riemannian_vs_plain_hiv}b).
+
+На сгенерированной выборке обучить модель при помощи стохастического градиентного спуска не получилось ни при каком значении величины шага, тогда как стохастическая риманова оптимизация обучает данную модель~(Рис.~\ref{fig:riemannian-vs-plain-synthetic}).
+
 %On the MovieLens 100K dataset, we have only used SGD-type algorithms, because using the one-hot feature encoding is much slower than using the categorical version (see Sec.~\ref{sec:model-extension}), and we have yet to implement the support for categorical features for the Riemannian optimizer.
 %On the bright side, prototyping the categorical version of ExM in TensorFlow allowed us to use a GPU accelerator.
 %
@@ -789,7 +775,7 @@ For the operations related to the TT-format, we used the TT-Toolbox\footnote{\ur
 %We report that on the Car dataset type-1 random initialization slowed the convergence compared to initialization from the linear model solution~(Fig.~\ref{fig:riemannian_vs_plain}a), while on the HIV dataset the convergence was completely frozen in case of the type-1 initialization~(see Fig.~\ref{fig:riemannian_vs_plain}b).
 %
 %Two possible reasons for this effect are:
-%a) the vanishing and exploding gradients problem~\citep{bengio1994vanishing} that arises when dealing with a product of a large number of factors ($160$ in the case of the HIV dataset);
+%a) the vanishing and exploding gradients problem~\cite{bengio1994vanishing} that arises when dealing with a product of a large number of factors ($160$ in the case of the HIV dataset);
 %b) by initializing the model in such a way that high-order terms dominate we may force the gradient-based optimization to focus on high-order terms at the beginning, while it may be beneficial to start with determining low-order terms instead.
 %
 %Type-2 initialization (a random linear model) worked on par with initialization from the solution of the linear problem on the Car, HIV, and synthetic datasets~(Fig.~\ref{fig:riemannian_vs_plain_car},~\ref{fig:riemannian_vs_plain_hiv},~\ref{fig:riemannian-vs-plain-synthetic}).
@@ -797,53 +783,67 @@ For the operations related to the TT-format, we used the TT-Toolbox\footnote{\ur
 %
 %
 %\subsection{Comparison to other approaches \label{sec:exp-comparison}}
-%On the synthetic dataset with high-order interactions we compared Exponential Machines (the proposed method) with scikit-learn implementation~\citep{scikit-learn} of logistic regression, random forest, and kernel SVM; FastFM implementation~\citep{bayer2015fastfm} of $2$-nd order Factorization Machines; our implementation of high-order Factorization Machines\footnote{\url{https://github.com/anonymized}}; and a feed-forward neural network implemented in TensorFlow~\citep{tensorflow2015-whitepaper}.
-%We used $6$-th order FM with the Adam optimizer~\citep{kingma2014adam} for which we had chosen the best rank ($20$) and learning rate ($0.003$) based on the training loss after the first $50$ iterations.
+%On the synthetic dataset with high-order interactions we compared Exponential Machines (the proposed method) with scikit-learn implementation~\cite{scikit-learn} of logistic regression, random forest, and kernel SVM; FastFM implementation~\cite{bayer2015fastfm} of $2$-nd order Factorization Machines; our implementation of high-order Factorization Machines\footnote{\url{https://github.com/anonymized}}; and a feed-forward neural network implemented in TensorFlow~\cite{tensorflow2015-whitepaper}.
+%We used $6$-th order FM with the Adam optimizer~\cite{kingma2014adam} for which we had chosen the best rank ($20$) and learning rate ($0.003$) based on the training loss after the first $50$ iterations.
 %We tried several feed-forward neural networks with ReLU activations and up to $4$ fully-connected layers and $128$ hidden units.
 %We compared the models based on the Area Under the Curve (AUC) metric since it is applicable to all methods and is robust to unbalanced labels.
 %We report that our model works on par with high-order Factorization Machines and outperforms all the baselines in the case of limited training time budget (yielding $0.85$ test AUC in 1831 seconds, see Tbl.~\ref{tbl:synthetic-comparison}).
 %
-%\begin{table}[t]
-%\caption{A comparison between models on synthetic data with high-order interactions (Sec.~\ref{sec:exp-comparison}).
-%We report the inference time on $100000$ test objects in the last column.}
-%\label{tbl:synthetic-comparison}
-%% \vskip 0.15in
-%\begin{center}
+\begin{table}[t]
+\caption{Сравнение различных методов классификации на сгенерированных данных (см. раздел~\ref{sec:exp-comparison}).
+Во второй колонке приведена мера качества AUC (площадь под РОК-кривой), чем больше тем лучше. В последней колонке указано время предсказания для $100000$ объектов.}
+\label{tbl:synthetic-comparison}
+% \vskip 0.15in
+\begin{center}
 %\begin{small}
 %\begin{sc}
-%\begin{tabular}{l*{3}{c}}
-%\hline
+\begin{tabular}{l*{3}{c}}
+\hline
 %\abovespace\belowspace
-%Method & Test AUC &
-%\parbox{1.4cm}{Training\\ time (s)} &
-%\parbox{1.4cm}{Inference\\ time (s)} \\[0.2cm]
-%\hline
+Модель & AUC &
+\parbox{3cm}{Время \\обучения (с)} &
+\parbox{3.8cm}{Время \\предсказания (с)} \\[0.2cm]
+\hline
 %\abovespace
-%Log. reg. & $0.50$ & $0.4$ & $0.0$ \\
-%RF & $0.55$ & $21.4$ & $6.5$ \\
-%Neural Network & $0.50$ & $47.2$ & $0.1$ \\
-%SVM RBF & $0.50$ & $2262.6$ & $5380$ \\
-%SVM poly. 2 & $0.50$ & $1152.6$ & $4260$ \\
-%SVM poly. 6 & $0.56$ & $4090.9$ & $3774$ \\
-%2-nd order FM & $0.50$ & $638.2$ & $0.5$ \\
-%6-th order FM & $0.57$ & $549$ & $3$ \\
-%6-th order FM & $0.86$ & $6039$ & $3$ \\
-%6-th order FM & $\textbf{0.96}$ & $38918$ & $3$ \\
-%ExM rank 3 & $0.79$ & $65$ & $0.2$ \\
-%ExM rank 8 & $0.85$ & $1831$ & $1.3$ \\
+Логистическая регрессия. & $0.50$ & $0.4$ & $0.0$ \\
+Случайный лес & $0.55$ & $21.4$ & $6.5$ \\
+ИНН & $0.50$ & $47.2$ & $0.1$ \\
+SVM RBF & $0.50$ & $2262.6$ & $5380$ \\
+SVM полин. 2 & $0.50$ & $1152.6$ & $4260$ \\
+SVM полин. 6 & $0.56$ & $4090.9$ & $3774$ \\
+FM 2-ого порядка & $0.50$ & $638.2$ & $0.5$ \\
+FM 6-ого порядка & $0.57$ & $549$ & $3$ \\
+FM 6-ого порядка & $0.86$ & $6039$ & $3$ \\
+FM 6-ого порядка & $\textbf{0.96}$ & $38918$ & $3$ \\
+Модель~\eqref{eq:polynomial-model}, TT-ранг 3 & $0.79$ & $65$ & $0.2$ \\
+Модель~\eqref{eq:polynomial-model}, TT-ранг 8 & $0.85$ & $1831$ & $1.3$ \\
 %\belowspace
-%ExM rank 16 & $\textbf{0.96}$ & $48879$ & $3.8$ \\
-%\hline
-%\end{tabular}
+Модель~\eqref{eq:polynomial-model}, TT-ранг 16 & $\textbf{0.96}$ & $48879$ & $3.8$ \\
+\hline
+\end{tabular}
 %\end{sc}
 %\end{small}
-%\end{center}
-%% \vskip -0.1in
-%\end{table}
+\end{center}
+% \vskip -0.1in
+\end{table}
 %
 %On the MovieLens 100K dataset we used the categorical features representation described in Sec.~\ref{sec:model-extension}.
 %Our model obtained $0.784$ test AUC with the TT-rank equal $10$ in $273$ seconds on a Tesla K40 GPU (the inference time is $0.3$ seconds per $78800$ test objects); our implentation of 3-rd order FM obtained $0.782$; logistic regression obtained $0.782$; and \cite{blondel2016hofm} reported $0.786$ with 3-rd order FM on the same data.
 %
+
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_synthetic_train.pdf}
+        \caption{обучающая выборка}
+    \end{subfigure}
+    \begin{subfigure}[b]{\textwidth}
+        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_synthetic_test.pdf}
+        \caption{валидационная выборка}
+    \end{subfigure}
+    \caption{Сгенерированные данные, сравнение стохастической римановой оптимизации с стохастическим градиентным спуском примененным к элементам ТТ-ядер для модели рекуррентной нейросети ТТ-ранга-$4$. Числа в легенде отражают размер мини-батча ($M$, число объектов использующихся на каждом шаге стохастической оптимизации). Графики отмеченные как `сл. иниц.' (квадратные  маркеры) отвечают запускам метода оптимизации со случайного ТТ-тензора ранга 4 (ядра которого заполнены стандартным нормальным шумом). \alert{todo: перевести легенду и выкинуть одну из инициализаций}.
+Все остальные кривые отвечают запускам инициализированным с решения линейной версии задачи (см. раздел~\ref{sec:exm-initialization}).}\label{fig:riemannian-vs-plain-synthetic}
+\end{figure}
 %
 %\begin{figure*}[t]
 %  % \vskip 0.2in
@@ -858,11 +858,9 @@ For the operations related to the TT-format, we used the TT-Toolbox\footnote{\ur
 %  % \vskip -0.2in
 %\end{figure*}
 %
-%\subsection{TT-rank \label{sec:exp-tt-rank}}
-%The TT-rank is one of the main hyperparameters of the proposed model.
-%Two possible strategies can be used to choose it: grid-search or DMRG-like algorithms (see Related Work, Sec.~\ref{sec:related-work}).
-%In our experiments we opted for the former and observed that the model is fairly robust to the choice of the TT-rank (see Fig.~\ref{fig:rank-vs-accuracy}), but a too small TT-rank can hurt the accuracy (see Tbl.~\ref{tbl:synthetic-comparison}).
-%
+\subsection{Зависимость от TT-ранга \label{sec:exp-tt-rank}}
+ТТ-ранг это один из основных гипер-параметров модели~\eqref{eq:polynomial-model}. В данной работе предлагается два способа для выбора ранга: поиск по сетке и методы основанные на идее алгоритма DMRG, способны адаптивно настраивать ТТ-ранг (см. раздел~\ref{sec:related-work}). В экспериментах выше использовался перебор ТТ-ранга по сетке.
+
 %\begin{figure}[t]
 %  % \vskip 0.2in
 %  \begin{center}
