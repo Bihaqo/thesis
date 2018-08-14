@@ -702,35 +702,35 @@ We use L$2$-regularization term for the TT-cores elements with $\lambda = 0.0005
 
 \section{Реализация тензорных полиномиальных моделей} \label{sec:exm-experiments}
 
-\begin{figure}
-    \centering
-    \begin{subfigure}[b]{\textwidth}
-        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_car_train.pdf}
-        \caption{обучающая выборка}
-    \end{subfigure}
-    \begin{subfigure}[b]{\textwidth}
-        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_car_validation.pdf}
-        \caption{валидационная выборка}
-    \end{subfigure}
-    \caption{Бинаризованный набор данных Car, сравнение стохастической римановой оптимизации с стохастическим градиентным спуском примененным к элементам ТТ-ядер для модели рекуррентной нейросети ТТ-ранга-$4$. Числа в легенде отражают размер мини-батча ($M$, число объектов использующихся на каждом шаге стохастической оптимизации). Графики отмеченные как `сл. иниц.' (квадратные  маркеры) отвечают запускам метода оптимизации со случайного ТТ-тензора ранга 4 (ядра которого заполнены стандартным нормальным шумом). \alert{todo: перевести легенду и выкинуть одну из инициализаций}.
-Все остальные кривые отвечают запускам инициализированным с решения линейной версии задачи (см. раздел~\ref{sec:exm-initialization}).}\label{fig:riemannian_vs_plain_car}
-\end{figure}
+%\begin{figure}
+%    \centering
+%    \begin{subfigure}[b]{\textwidth}
+%        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_car_train.pdf}
+%        \caption{обучающая выборка}
+%    \end{subfigure}
+%    \begin{subfigure}[b]{\textwidth}
+%        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_car_validation.pdf}
+%        \caption{валидационная выборка}
+%    \end{subfigure}
+%    \caption{Бинаризованный набор данных Car, сравнение стохастической римановой оптимизации с стохастическим градиентным спуском примененным к элементам ТТ-ядер для модели рекуррентной нейросети ТТ-ранга-$4$. Числа в легенде отражают размер мини-батча ($M$, число объектов использующихся на каждом шаге стохастической оптимизации). Графики отмеченные как `сл. иниц.' (квадратные  маркеры) отвечают запускам метода оптимизации со случайного ТТ-тензора ранга 4 (ядра которого заполнены стандартным нормальным шумом). \alert{todo: перевести легенду и выкинуть одну из инициализаций}.
+%Все остальные кривые отвечают запускам инициализированным с решения линейной версии задачи (см. раздел~\ref{sec:exm-initialization}).}\label{fig:riemannian_vs_plain_car}
+%\end{figure}
 
 
 
-\begin{figure}
-    \centering
-    \begin{subfigure}[b]{\textwidth}
-        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_hiv_train.pdf}
-        \caption{обучающая выборка}
-    \end{subfigure}
-    \begin{subfigure}[b]{\textwidth}
-        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_hiv_validation.pdf}
-        \caption{валидационная выборка}
-    \end{subfigure}
-    \caption{Набор данных HIV, сравнение стохастической римановой оптимизации с стохастическим градиентным спуском примененным к элементам ТТ-ядер для модели рекуррентной нейросети ТТ-ранга-$4$. Числа в легенде отражают размер мини-батча ($M$, число объектов использующихся на каждом шаге стохастической оптимизации). Графики отмеченные как `сл. иниц.' (квадратные  маркеры) отвечают запускам метода оптимизации со случайного ТТ-тензора ранга 4 (ядра которого заполнены стандартным нормальным шумом). \alert{todo: перевести легенду и выкинуть одну из инициализаций}.
-Все остальные кривые отвечают запускам инициализированным с решения линейной версии задачи (см. раздел~\ref{sec:exm-initialization}).}\label{fig:riemannian_vs_plain_hiv}
-\end{figure}
+%\begin{figure}
+%    \centering
+%    \begin{subfigure}[b]{\textwidth}
+%        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_hiv_train.pdf}
+%        \caption{обучающая выборка}
+%    \end{subfigure}
+%    \begin{subfigure}[b]{\textwidth}
+%        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_hiv_validation.pdf}
+%        \caption{валидационная выборка}
+%    \end{subfigure}
+%    \caption{Набор данных HIV, сравнение стохастической римановой оптимизации с стохастическим градиентным спуском примененным к элементам ТТ-ядер для модели рекуррентной нейросети ТТ-ранга-$4$. Числа в легенде отражают размер мини-батча ($M$, число объектов использующихся на каждом шаге стохастической оптимизации). Графики отмеченные как `сл. иниц.' (квадратные  маркеры) отвечают запускам метода оптимизации со случайного ТТ-тензора ранга 4 (ядра которого заполнены стандартным нормальным шумом). \alert{todo: перевести легенду и выкинуть одну из инициализаций}.
+%Все остальные кривые отвечают запускам инициализированным с решения линейной версии задачи (см. раздел~\ref{sec:exm-initialization}).}\label{fig:riemannian_vs_plain_hiv}
+%\end{figure}
 
 \subsection{Наборы данных \label{sec:exp-datasets}}
 Наборы данных используемые в экспериментах $\alert{todo: compare with RNN wrt learning speed?}$
@@ -831,19 +831,19 @@ FM 6-ого порядка & $\textbf{0.96}$ & $38918$ & $3$ \\
 %Our model obtained $0.784$ test AUC with the TT-rank equal $10$ in $273$ seconds on a Tesla K40 GPU (the inference time is $0.3$ seconds per $78800$ test objects); our implentation of 3-rd order FM obtained $0.782$; logistic regression obtained $0.782$; and \cite{blondel2016hofm} reported $0.786$ with 3-rd order FM on the same data.
 %
 
-\begin{figure}
-    \centering
-    \begin{subfigure}[b]{\textwidth}
-        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_synthetic_train.pdf}
-        \caption{обучающая выборка}
-    \end{subfigure}
-    \begin{subfigure}[b]{\textwidth}
-        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_synthetic_test.pdf}
-        \caption{валидационная выборка}
-    \end{subfigure}
-    \caption{Сгенерированные данные, сравнение стохастической римановой оптимизации с стохастическим градиентным спуском примененным к элементам ТТ-ядер для модели рекуррентной нейросети ТТ-ранга-$4$. Числа в легенде отражают размер мини-батча ($M$, число объектов использующихся на каждом шаге стохастической оптимизации). Графики отмеченные как `сл. иниц.' (квадратные  маркеры) отвечают запускам метода оптимизации со случайного ТТ-тензора ранга 4 (ядра которого заполнены стандартным нормальным шумом). \alert{todo: перевести легенду и выкинуть одну из инициализаций}.
-Все остальные кривые отвечают запускам инициализированным с решения линейной версии задачи (см. раздел~\ref{sec:exm-initialization}).}\label{fig:riemannian-vs-plain-synthetic}
-\end{figure}
+%\begin{figure}
+%    \centering
+%    \begin{subfigure}[b]{\textwidth}
+%        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_synthetic_train.pdf}
+%        \caption{обучающая выборка}
+%    \end{subfigure}
+%    \begin{subfigure}[b]{\textwidth}
+%        \includegraphics[width=\textwidth]{images/riemannian_vs_plain_synthetic_test.pdf}
+%        \caption{валидационная выборка}
+%    \end{subfigure}
+%    \caption{Сгенерированные данные, сравнение стохастической римановой оптимизации с стохастическим градиентным спуском примененным к элементам ТТ-ядер для модели рекуррентной нейросети ТТ-ранга-$4$. Числа в легенде отражают размер мини-батча ($M$, число объектов использующихся на каждом шаге стохастической оптимизации). Графики отмеченные как `сл. иниц.' (квадратные  маркеры) отвечают запускам метода оптимизации со случайного ТТ-тензора ранга 4 (ядра которого заполнены стандартным нормальным шумом). \alert{todo: перевести легенду и выкинуть одну из инициализаций}.
+%Все остальные кривые отвечают запускам инициализированным с решения линейной версии задачи (см. раздел~\ref{sec:exm-initialization}).}\label{fig:riemannian-vs-plain-synthetic}
+%\end{figure}
 %
 %\begin{figure*}[t]
 %  % \vskip 0.2in
